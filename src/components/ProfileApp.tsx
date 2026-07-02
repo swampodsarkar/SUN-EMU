@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDiscordAuth } from '../lib/useDiscordAuth';
-import { LogIn, LogOut, User, Save, RefreshCw } from 'lucide-react';
+import { LogOut, Save, RefreshCw } from 'lucide-react';
+import { DiscordIcon } from './icons';
 import { ref, set, get } from 'firebase/database';
 import { db } from '../lib/firebase';
 
@@ -70,7 +71,7 @@ export default function ProfileApp() {
     <div className="h-full w-full bg-[#020617] text-white p-8 overflow-auto font-sans">
       <div className="max-w-md mx-auto bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <User className="w-6 h-6 text-indigo-400" />
+          <DiscordIcon className="w-6 h-6 text-[#5865F2]" />
           Cloud Profile
         </h2>
 
@@ -81,7 +82,7 @@ export default function ProfileApp() {
               onClick={login}
               className="bg-[#5865F2] hover:bg-[#4752C4] text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 w-full"
             >
-              <LogIn className="w-5 h-5" />
+              <DiscordIcon className="w-5 h-5" />
               Login with Discord
             </button>
           </div>
@@ -95,8 +96,8 @@ export default function ProfileApp() {
                   className="w-16 h-16 rounded-full border-2 border-indigo-500"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-indigo-500/20 flex items-center justify-center border-2 border-indigo-500">
-                  <User className="w-8 h-8 text-indigo-400" />
+                <div className="w-16 h-16 rounded-full bg-indigo-500/20 flex items-center justify-center border-2 border-[#5865F2]">
+                  <DiscordIcon className="w-8 h-8 text-[#5865F2]" />
                 </div>
               )}
               <div>
