@@ -14,6 +14,7 @@ export default function EmulatorView({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showQuit, setShowQuit] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wasFsRef = useRef(false);
 
   const resetTimer = useCallback(() => {
     setShowUI(true);
@@ -23,7 +24,9 @@ export default function EmulatorView({
 
   const enterFullscreen = useCallback(() => {
     if (containerRef.current && !document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(() => {});
+      containerRef.current.requestFullscreen().then(() => {
+        wasFsRef.current = true;
+      }).catch(() => {});
     }
   }, []);
 
@@ -40,28 +43,34 @@ export default function EmulatorView({
     }
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      exitFullscreen();
     };
   }, [isPlaying]);
 
+  // Intercept ESC / fullscreen exit → show quit popup instead of mini window
   useEffect(() => {
     const onFSChange = () => {
-      if (!document.fullscreenElement && isPlaying) {
-        setShowUI(true);
+      if (!document.fullscreenElement && isPlaying && !showQuit) {
+        setShowQuit(true);
       }
     };
     document.addEventListener("fullscreenchange", onFSChange);
     return () => document.removeEventListener("fullscreenchange", onFSChange);
-  }, [isPlaying]);
+  }, [isPlaying, showQuit]);
 
-  const handleBack = () => {
+  const handleCancelQuit = () => {
+    setShowQuit(false);
+    enterFullscreen();
+  };
+
+  const handleConfirmQuit = () => {
+    wasFsRef.current = false;
     exitFullscreen();
     onBack();
   };
 
   if (!isPlaying) {
     return (
-      <div className="h-full w-full flex flex-col items-center justify-center bg-[#050510] text-white/20">
+      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#050510] text-white/20">
         <Gamepad2 className="w-16 h-16 mb-4" />
         <p className="text-sm font-medium">No game loaded</p>
       </div>
@@ -69,9 +78,9 @@ export default function EmulatorView({
   }
 
   return (
-      <div
-        ref={containerRef}
-        className="fixed inset-0 z-[200] bg-black"
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-[200] bg-black"
       onMouseMove={resetTimer}
       onMouseLeave={() => setShowUI(true)}
       onTouchStart={resetTimer}
@@ -87,7 +96,7 @@ export default function EmulatorView({
       />
 
       <AnimatePresence>
-        {showUI && (
+        {showUI && !showQuit && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -119,7 +128,7 @@ export default function EmulatorView({
       </AnimatePresence>
 
       <AnimatePresence>
-        {showUI && (
+        {showUI && !showQuit && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -147,29 +156,27 @@ export default function EmulatorView({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center"
-            onClick={() => setShowQuit(false)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
               className="bg-[#111128] border border-white/8 rounded-3xl p-8 w-full max-w-sm mx-6 text-center"
             >
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-5">
                 <Gamepad2 className="w-8 h-8 text-white/40" />
               </div>
               <h2 className="text-xl font-bold text-white mb-2">Close Game?</h2>
-              <p className="text-sm text-white/30 mb-8">Your progress will be lost if you don't have save states.</p>
+              <p className="text-sm text-white/30 mb-8">Press ESC again or confirm to close.</p>
               <div className="flex flex-col gap-2.5">
                 <button
-                  onClick={handleBack}
+                  onClick={handleConfirmQuit}
                   className="w-full bg-white/10 hover:bg-white/15 text-white font-semibold text-sm py-3.5 rounded-2xl transition-colors"
                 >
                   Close Game
                 </button>
                 <button
-                  onClick={() => setShowQuit(false)}
+                  onClick={handleCancelQuit}
                   className="w-full text-white/40 hover:text-white/60 font-medium text-sm py-2 transition-colors"
                 >
                   Cancel
