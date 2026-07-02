@@ -1,6 +1,9 @@
 export type SupportedCore = 
-  | "nes" | "snes" | "gb" | "gbc" | "gba" | "nds" 
-  | "segaMD" | "sms" | "gg" | "psx" | "atari2600" | "dos" | "arcade";
+  | "nes" | "snes" | "n64" | "gb" | "gbc" | "gba" | "nds" 
+  | "sms" | "segaMD" | "gg" | "segacd" | "32x" | "saturn" 
+  | "psx" | "atari2600" | "atari5200" | "atari7800" | "lynx" | "jaguar" 
+  | "neogeo" | "ngp" | "ngpc" | "pce" | "pcecd" 
+  | "wswan" | "wsc" | "vb" | "coleco" | "msx" | "dos" | "arcade" | "fba";
 
 export interface EmulatorInputEvent {
   id: string; // socket id of the controller

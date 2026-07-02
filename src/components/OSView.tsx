@@ -6,11 +6,20 @@ import type { SupportedCore } from '../types';
 import { cn } from '../lib/utils';
 import EmulatorView from './EmulatorView';
 import ControllerApp from './ControllerApp';
+import StoreApp from './StoreApp';
+import AdminPanel from './AdminPanel';
+import LoginModal from './LoginModal';
+import { useStore } from '../lib/store';
 
 const coreExtensions: Record<string, SupportedCore> = {
-  ".nes": "nes", ".smc": "snes", ".sfc": "snes", ".gb": "gb", ".gbc": "gbc",
-  ".gba": "gba", ".nds": "nds", ".md": "segaMD", ".gen": "segaMD", ".sms": "sms",
-  ".gg": "gg", ".iso": "psx", ".bin": "psx", ".a26": "atari2600", ".zip": "arcade",
+  ".nes": "nes", ".smc": "snes", ".sfc": "snes", ".n64": "n64", ".v64": "n64", ".z64": "n64",
+  ".gb": "gb", ".gbc": "gbc", ".gba": "gba", ".nds": "nds", 
+  ".md": "segaMD", ".gen": "segaMD", ".smd": "segaMD", ".sms": "sms", ".gg": "gg", 
+  ".iso": "psx", ".bin": "psx", ".cue": "psx", ".img": "psx",
+  ".a26": "atari2600", ".a52": "atari5200", ".a78": "atari7800", ".lnx": "lynx", ".j64": "jaguar",
+  ".ngp": "ngp", ".ngc": "ngpc", ".pce": "pce", ".sgx": "pce",
+  ".ws": "wswan", ".wsc": "wsc", ".vb": "vb", ".col": "coleco", ".rom": "msx", ".mxs": "msx",
+  ".zip": "arcade", ".7z": "arcade"
 };
 
 interface AppItem {
@@ -29,12 +38,16 @@ interface AppItem {
 export default function OSView() {
   const session = useEmulatorSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const store = useStore();
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeIndex, setActiveIndex] = useState(0);
   const [category, setCategory] = useState<'games'>('games');
   const [showPowerMenu, setShowPowerMenu] = useState(false);
   const [showControllerModal, setShowControllerModal] = useState(false);
+  const [showStoreModal, setShowStoreModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [bootSequence, setBootSequence] = useState(true);
 
   useEffect(() => {
@@ -91,6 +104,7 @@ export default function OSView() {
       subtitle: 'Discover New Games',
       bgGradient: 'from-orange-600 via-red-900 to-slate-900',
       icon: <ShoppingBag className="w-10 h-10 text-white" />,
+      action: () => setShowStoreModal(true),
       type: 'system'
     },
     {
@@ -118,7 +132,7 @@ export default function OSView() {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (session.isPlaying || showControllerModal || bootSequence) return;
+      if (session.isPlaying || showControllerModal || showStoreModal || showLoginModal || showAdminPanel || bootSequence) return;
       
       if (e.key === 'ArrowRight') {
         setActiveIndex(prev => Math.min(prev + 1, apps.length - 1));
@@ -201,12 +215,22 @@ export default function OSView() {
           <button className="text-white/80 hover:text-white hover:scale-110 transition-all cursor-pointer bg-white/5 p-2.5 rounded-full hover:bg-white/10 backdrop-blur-md">
             <Settings className="w-6 h-6" />
           </button>
-          <button className="flex items-center gap-3 bg-white/5 p-1.5 pr-4 rounded-full hover:bg-white/10 backdrop-blur-md transition-all border border-white/10 cursor-pointer">
+          <button onClick={() => {
+            if (store.currentUser) {
+               if (store.currentUser.email === 'mdswampodsakrar@gmail.com') {
+                  setShowAdminPanel(true);
+               } else {
+                  store.logout();
+               }
+            } else {
+               setShowLoginModal(true);
+            }
+          }} className="flex items-center gap-3 bg-white/5 p-1.5 pr-4 rounded-full hover:bg-white/10 backdrop-blur-md transition-all border border-white/10 cursor-pointer">
             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center ring-2 ring-white/20">
               <User className="w-5 h-5 text-white" />
             </div>
-            <div className="w-3 h-3 rounded-full bg-green-500 relative">
-               <div className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-50" />
+            <div className={`w-3 h-3 rounded-full ${store.currentUser ? 'bg-green-500' : 'bg-red-500'} relative`}>
+               {store.currentUser && <div className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-50" />}
             </div>
           </button>
           <span className="text-xl font-medium opacity-90 tracking-wide tabular-nums">
@@ -356,30 +380,62 @@ export default function OSView() {
       <AnimatePresence>
         {showControllerModal && (
           <motion.div 
-            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            animate={{ opacity: 1, backdropFilter: 'blur(30px)' }}
-            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            transition={{ duration: 0.5 }}
-            className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-8"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 z-[120] bg-black"
           >
-            <motion.div 
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="relative w-[90vw] max-w-5xl h-[80vh] max-h-[750px] bg-white/5 backdrop-blur-3xl rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_0_120px_rgba(255,255,255,0.15)]"
+            <button 
+              onClick={() => setShowControllerModal(false)}
+              className="absolute top-8 right-8 z-[130] bg-white/10 hover:bg-white text-white hover:text-black p-3 rounded-full backdrop-blur-md transition-all shadow-lg group"
             >
-              <button 
-                onClick={() => setShowControllerModal(false)}
-                className="absolute top-8 right-8 z-20 bg-white/10 hover:bg-white text-white hover:text-black p-3 rounded-full backdrop-blur-md transition-all shadow-lg group"
-              >
-                <X className="w-6 h-6 group-hover:scale-110 transition-transform" />
-              </button>
-              <div className="h-full w-full">
-                <ControllerApp pairCode={session.pairCode} controllers={session.controllers} />
-              </div>
-            </motion.div>
+              <X className="w-6 h-6 group-hover:scale-110 transition-transform" />
+            </button>
+            <ControllerApp pairCode={session.pairCode} controllers={session.controllers} />
           </motion.div>
+        )}
+
+        {showStoreModal && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 z-[120] bg-black"
+          >
+            <button 
+              onClick={() => setShowStoreModal(false)}
+              className="absolute top-8 right-8 z-[130] bg-white/10 hover:bg-white text-white hover:text-black p-3 rounded-full backdrop-blur-md transition-all shadow-lg group"
+            >
+              <X className="w-6 h-6 group-hover:scale-110 transition-transform" />
+            </button>
+            <StoreApp 
+              onPlayGame={(name, url, core) => {
+                session.setGameName(name);
+                session.setGameUrl(url);
+                session.setCore(core as any);
+                setShowStoreModal(false);
+                setTimeout(() => session.setIsPlaying(true), 300);
+              }} 
+            />
+          </motion.div>
+        )}
+
+        {showLoginModal && (
+          <LoginModal 
+            onClose={() => setShowLoginModal(false)} 
+            onLoginSuccess={(email) => {
+              setShowLoginModal(false);
+              if (email === 'mdswampodsakrar@gmail.com') {
+                setShowAdminPanel(true);
+              }
+            }}
+          />
+        )}
+
+        {showAdminPanel && (
+          <AdminPanel onClose={() => setShowAdminPanel(false)} />
         )}
 
         {session.isPlaying && (
