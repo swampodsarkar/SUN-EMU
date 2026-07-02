@@ -102,9 +102,9 @@ export default function ControllerView() {
       } else {
         setError("Invalid or expired Pair Code.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to connect to session.");
+      setError(err.message || "Failed to connect to session.");
     }
   };
 

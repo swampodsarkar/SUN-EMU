@@ -49,6 +49,9 @@ export default function EmulatorView() {
     set(sessionRef, {
       createdAt: Date.now(),
       hostAlive: true
+    }).catch(err => {
+      console.error("Firebase rule error?", err);
+      alert("Error creating session in Firebase: " + err.message + "\n\nPlease check your Firebase Realtime Database Rules (they might be set to false).");
     });
 
     const controllersRef = ref(db, `sessions/${code}/controllers`);
