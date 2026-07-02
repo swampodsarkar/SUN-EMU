@@ -1,15 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@500;600&family=Hanken+Grotesk:wght@400;500&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-ps5-blue: #0072ce;
-  --color-ps5-hover: #0090ff;
-  --color-ps5-bg: #050510;
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-ps5-blue: #0070d1;
+  --color-ps5-blue-light: #a7c8ff;
+  --color-ps5-bg: #131318;
+  --color-ps5-surface: #1f1f25;
   --color-ps5-card: #111128;
   --color-ps5-card-hover: #1a1a3a;
-  --color-ps5-surface: #0d0d20;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -17,76 +17,35 @@
 html, body, #root { height: 100%; width: 100%; overflow: hidden; }
 
 body {
-  background-color: #050510;
-  color: #f0f0f5;
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  background-color: #131318;
+  color: #e4e1e9;
+  font-family: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-::selection { background: rgba(0, 114, 206, 0.4); color: #fff; }
+::selection { background: rgba(0, 112, 209, 0.4); color: #fff; }
 
 ::-webkit-scrollbar { width: 0; height: 0; }
 
-@keyframes ps5-fade-up {
-  from { opacity: 0; transform: translateY(16px); }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes ps5-scale-in {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes ps5-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(0, 114, 206, 0.15); }
-  50% { box-shadow: 0 0 40px rgba(0, 114, 206, 0.3); }
-}
-
-.ps5-fade-up { animation: ps5-fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.ps5-scale-in { animation: ps5-scale-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-.ps5-tile {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.ps5-tile:hover {
-  transform: scale(1.08);
-  z-index: 10;
-}
-
-.ps5-tile.active {
-  transform: scale(1.08);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6), 0 0 30px rgba(0, 114, 206, 0.3);
-  z-index: 10;
-}
-
-.ps5-btn {
-  background: rgba(255, 255, 255, 0.08);
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
-  cursor: pointer;
 }
 
-.ps5-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.ps5-btn-primary {
-  background: #0072ce;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.ps5-btn-primary:hover {
-  background: #0088e8;
-  box-shadow: 0 0 30px rgba(0, 114, 206, 0.4);
-}
-
-.ps5-hero-glow {
-  position: absolute;
-  pointer-events: none;
-  background: radial-gradient(ellipse at 30% 50%, rgba(0, 114, 206, 0.10) 0%, transparent 70%);
+.glow-active {
+  box-shadow: 0 0 30px rgba(167, 200, 255, 0.4);
+  border-color: #a7c8ff;
 }
