@@ -10,28 +10,13 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 
 const MENU_ITEMS = [
-  { id: 'controller', label: 'Controller Settings', icon: Gamepad2, color: 'text-blue-400' },
-  { id: 'cloud', label: 'Cloud Saves (Firebase)', icon: Cloud, color: 'text-sky-400' },
-  { id: 'profile', label: 'User Profile', icon: User, color: 'text-indigo-400' },
-  { id: 'themes', label: 'Themes', icon: Palette, color: 'text-pink-400' },
-  { id: 'display', label: 'Dark/Light Mode', icon: Moon, color: 'text-slate-400' },
-  { id: 'language', label: 'Language & Region', icon: Globe, color: 'text-emerald-400' },
-  { id: 'notifications', label: 'Notifications', icon: Bell, color: 'text-yellow-400' },
-  { id: 'security', label: 'Security (PIN, 2FA)', icon: Shield, color: 'text-red-400' },
-  { id: 'storage', label: 'Storage Manager', icon: HardDrive, color: 'text-orange-400' },
-  { id: 'emulator', label: 'Emulator Settings', icon: Settings2, color: 'text-gray-400' },
-  { id: 'cloudgaming', label: 'Cloud Gaming Settings', icon: CloudLightning, color: 'text-purple-400' },
-  { id: 'voice', label: 'Voice Chat', icon: Mic, color: 'text-green-400' },
-  { id: 'remoteplay', label: 'Remote Play', icon: Wifi, color: 'text-blue-500' },
-  { id: 'performance', label: 'Performance Mode', icon: Zap, color: 'text-yellow-500' },
-  { id: 'wallpaper', label: 'Wallpaper Manager', icon: ImageIcon, color: 'text-pink-500' },
-  { id: 'autoupdate', label: 'Auto Update', icon: RefreshCw, color: 'text-teal-400' },
-  { id: 'downloads', label: 'Downloads Manager', icon: DownloadCloud, color: 'text-cyan-400' },
-  { id: 'achievements', label: 'Achievements', icon: Trophy, color: 'text-amber-400' },
-  { id: 'wishlist', label: 'Wishlist', icon: Heart, color: 'text-rose-400' },
-  { id: 'billing', label: 'Subscription & Billing', icon: CreditCard, color: 'text-emerald-500' },
-  { id: 'support', label: 'Feedback & Support', icon: MessageSquare, color: 'text-indigo-300' },
-  { id: 'about', label: 'About Console', icon: Info, color: 'text-gray-300' },
+  { id: 'emulator', label: 'Emulator Settings', icon: Settings2, color: 'text-gray-400', desc: 'CRT filters, video aspect ratio, and rewind memory' },
+  { id: 'controller', label: 'Controller Settings', icon: Gamepad2, color: 'text-blue-400', desc: 'Control mappings, vibration rumble, and accessories' },
+  { id: 'performance', label: 'Performance & Diagnostics', icon: Zap, color: 'text-yellow-400', desc: 'Frame rate cap, low-latency, and diagnostic utility' },
+  { id: 'cloud_storage', label: 'Cloud Saves & Storage', icon: Cloud, color: 'text-sky-400', desc: 'Firebase save backup and local cache manager' },
+  { id: 'themes', label: 'Themes & Wallpaper', icon: Palette, color: 'text-pink-400', desc: 'Dashboard styling, light/dark, and wallpapers' },
+  { id: 'profile', label: 'Gamer Profile & Badges', icon: User, color: 'text-indigo-400', desc: 'User profile, achievements, and games wishlist' },
+  { id: 'about', label: 'System Info & Help', icon: Info, color: 'text-emerald-400', desc: 'Languages, system specs, FAQ, and support' },
 ];
 
 const WALLPAPERS = [
@@ -44,8 +29,8 @@ const WALLPAPERS = [
 ];
 
 export default function SettingsApp() {
-  const [activeTab, setActiveTab] = useState(MENU_ITEMS[0].id);
-  const { settings, updateSettings, currentUser, wishlist, toggleWishlist, achievements, games, addGame } = useStore();
+  const [activeTab, setActiveTab] = useState('emulator');
+  const { settings, updateSettings, currentUser, wishlist, toggleWishlist, achievements, games } = useStore();
 
   // Simulated system/test states
   const [rumbleTest, setRumbleTest] = useState(false);
@@ -208,441 +193,18 @@ export default function SettingsApp() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'controller':
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-3xl font-bold">Controller Settings</h2>
-                <p className="text-white/50 text-sm mt-1">Configure buttons layout, key mappings, and test vibration feedback</p>
-              </div>
-              <button 
-                onClick={testRumble}
-                className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${rumbleTest ? 'bg-indigo-600 animate-bounce' : 'bg-white/10 hover:bg-white/20'}`}
-              >
-                <Radio className="w-5 h-5 text-indigo-400" /> {rumbleTest ? 'Vibrating...' : 'Test Rumble Feedback'}
-              </button>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-              <h3 className="text-xl font-semibold mb-4">Keyboard remap controls</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {Object.keys(keyMappings).map((btn) => (
-                  <div key={btn} className="bg-black/40 border border-white/5 p-4 rounded-xl flex flex-col justify-between items-center gap-2">
-                    <span className="text-sm text-white/50">{btn}</span>
-                    <button 
-                      onClick={() => handleRemapClick(btn)}
-                      className="px-4 py-2 bg-white/10 hover:bg-white/20 hover:border-white/30 border border-white/10 rounded-lg text-sm text-indigo-300 font-mono transition-all w-full text-center"
-                    >
-                      {remapKey === btn ? 'Press any Key...' : keyMappings[btn]}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <h3 className="text-xl font-semibold">Active Connected Controllers</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping" />
-                    <div>
-                      <h4 className="font-bold text-sm">Keyboard Link (Emulated)</h4>
-                      <p className="text-xs text-white/40">Active control mapping layout #1</p>
-                    </div>
-                  </div>
-                  <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded font-bold">PORT 1</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-xl opacity-60">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 bg-zinc-500 rounded-full" />
-                    <div>
-                      <h4 className="font-bold text-sm">DualSense Bluetooth Controller</h4>
-                      <p className="text-xs text-white/40">Offline / Standby pairing</p>
-                    </div>
-                  </div>
-                  <span className="text-xs bg-white/10 text-white/60 px-2.5 py-1 rounded font-bold">PORT 2</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case 'cloud':
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-3xl font-bold">Cloud Saves (Firebase)</h2>
-                <p className="text-white/50 text-sm mt-1">Keep your high scores and game progress synchronized safely online</p>
-              </div>
-              <button 
-                onClick={forceCloudSync}
-                disabled={cloudSyncing}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-5 h-5 ${cloudSyncing ? 'animate-spin' : ''}`} />
-                Force Backup Sync
-              </button>
-            </div>
-
-            {syncMessage && (
-              <div className="bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-xl text-indigo-200 text-sm">
-                {syncMessage}
-              </div>
-            )}
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-medium">Automatic Firebase Synced Saves</h3>
-                <p className="text-white/50 text-sm">Automatically sync state triggers on game exits</p>
-              </div>
-              <button 
-                onClick={() => updateSettings({ cloudSyncEnabled: !settings.cloudSyncEnabled })}
-                className={`w-14 h-8 rounded-full transition-colors relative ${settings.cloudSyncEnabled ? 'bg-indigo-500' : 'bg-white/20'}`}
-              >
-                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.cloudSyncEnabled ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <h3 className="text-xl font-semibold">Active Save Backups</h3>
-              <div className="space-y-2">
-                {[
-                  { game: 'Super Mario 64', size: '14 KB', slot: 'Save Slot 1', time: 'Last Backed Up: Just Now' },
-                  { game: 'Legend of Zelda', size: '124 KB', slot: 'Save Slot 3', time: 'Last Backed Up: 2 hours ago' }
-                ].map((save, i) => (
-                  <div key={i} className="flex justify-between items-center p-4 bg-black/30 rounded-xl border border-white/5">
-                    <div>
-                      <h4 className="font-bold text-sm">{save.game}</h4>
-                      <p className="text-xs text-white/40">{save.slot} • {save.size} • {save.time}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold">Restore</button>
-                      <button className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold">Delete</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      case 'profile':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">User Profile</h2>
-            <div className="bg-white/5 border border-white/10 p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6">
-               <div className="relative group">
-                 <img src={avatar} alt="Profile Avatar" className="w-24 h-24 rounded-full object-cover border-4 border-indigo-500" />
-                 <button 
-                  onClick={() => {
-                    const nextAvatar = prompt("Enter Image URL for avatar:");
-                    if (nextAvatar) setAvatar(nextAvatar);
-                  }}
-                  className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer font-bold"
-                 >
-                   Change Image
-                 </button>
-               </div>
-               <div className="flex-1 text-center md:text-left space-y-2">
-                  <input 
-                    type="text" 
-                    value={profileName} 
-                    onChange={e => setProfileName(e.target.value)}
-                    className="bg-transparent border-b border-transparent hover:border-white/20 focus:border-indigo-500 focus:outline-none text-2xl font-bold"
-                  />
-                  <input 
-                    type="text" 
-                    value={profileBio} 
-                    onChange={e => setProfileBio(e.target.value)}
-                    placeholder="Enter status/bio..."
-                    className="bg-transparent border-b border-transparent hover:border-white/20 focus:border-indigo-500 focus:outline-none text-white/50 text-sm block w-full"
-                  />
-               </div>
-               <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-center min-w-[120px]">
-                  <Trophy className="w-8 h-8 text-amber-400 mx-auto mb-1" />
-                  <span className="text-2xl font-bold font-mono">14,200</span>
-                  <p className="text-xs text-white/40 uppercase tracking-widest font-bold mt-1">GamerScore</p>
-               </div>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <h3 className="text-xl font-semibold">User Level Stats</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Level 24 (Retro Adept)</span>
-                  <span className="font-mono text-indigo-400">8,200 / 10,000 XP</span>
-                </div>
-                <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden">
-                  <div className="bg-indigo-500 h-full rounded-full" style={{ width: '82%' }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case 'themes':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Themes</h2>
-            <p className="text-white/50 text-sm">Choose active visual presentation theme and customize palette gradients</p>
-            <div className="grid grid-cols-2 gap-4">
-              {['Cosmic Slate', 'Neon Vapor', 'Midnight Blue', 'Retro Classic'].map(theme => (
-                <button 
-                  key={theme}
-                  onClick={() => updateSettings({ theme })}
-                  className={`p-6 rounded-2xl border text-left transition-all ${settings.theme === theme ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5 hover:border-white/30'}`}
-                >
-                  <h3 className="text-xl font-bold">{theme}</h3>
-                  {settings.theme === theme ? (
-                    <div className="mt-2 text-indigo-400 text-sm font-medium flex items-center gap-1">
-                      <Check className="w-4 h-4" /> Selected
-                    </div>
-                  ) : (
-                    <div className="mt-2 text-white/40 text-sm">Click to apply</div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-      case 'display':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Display & Light Settings</h2>
-            
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-medium">Dark Mode</h3>
-                <p className="text-white/50 text-sm">Switch to high contrast midnight palettes</p>
-              </div>
-              <button 
-                onClick={() => updateSettings({ darkMode: !settings.darkMode })}
-                className={`w-14 h-8 rounded-full transition-colors relative ${settings.darkMode ? 'bg-indigo-500' : 'bg-white/20'}`}
-              >
-                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.darkMode ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <div>
-                <h3 className="text-xl font-medium">Brightness Level</h3>
-                <p className="text-white/50 text-sm">Configure system screen overlay luminance</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <Moon className="w-5 h-5 text-white/40" />
-                <input type="range" min="20" max="100" defaultValue="90" className="w-full accent-indigo-500 h-1 bg-white/20 rounded-lg cursor-pointer" />
-                <SunIcon className="w-5 h-5 text-indigo-400" />
-              </div>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <div>
-                <h3 className="text-xl font-medium">Visual Text Scale</h3>
-                <p className="text-white/50 text-sm">Adapt general UI elements to focus display comfort</p>
-              </div>
-              <div className="flex gap-4">
-                {['Small', 'Medium', 'Large', 'Extra Large'].map((s, idx) => (
-                  <button key={s} className={`flex-1 py-2.5 rounded-xl border text-sm font-bold ${idx === 1 ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-white/5 bg-black/20 text-white/60'}`}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      case 'language':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Language & Region</h2>
-            
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-              <h3 className="text-xl font-medium mb-4">System Language</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {['English', 'Spanish', 'French', 'Japanese', 'Bengali'].map(lang => (
-                  <button 
-                    key={lang}
-                    onClick={() => updateSettings({ language: lang })}
-                    className={`flex items-center justify-between p-4 rounded-xl border transition-all ${settings.language === lang ? 'border-indigo-500 bg-indigo-500/10 text-white' : 'border-white/5 hover:bg-white/5 text-white/70'}`}
-                  >
-                    <span>{lang}</span>
-                    {settings.language === lang && <Check className="w-5 h-5 text-indigo-400" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
-              <h3 className="text-xl font-medium mb-4">Active Console Region</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {['North America', 'Europe', 'Asia', 'South America'].map(reg => (
-                  <button 
-                    key={reg}
-                    onClick={() => updateSettings({ region: reg })}
-                    className={`flex items-center justify-between p-4 rounded-xl border transition-all ${settings.region === reg ? 'border-indigo-500 bg-indigo-500/10 text-white' : 'border-white/5 hover:bg-white/5 text-white/70'}`}
-                  >
-                    <span>{reg}</span>
-                    {settings.region === reg && <Check className="w-5 h-5 text-indigo-400" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      case 'notifications':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Notifications Settings</h2>
-            
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-medium">Allow Global Notifications</h3>
-                <p className="text-white/50 text-sm">System messages, system triggers, and updates</p>
-              </div>
-              <button 
-                onClick={() => updateSettings({ notifications: !settings.notifications })}
-                className={`w-14 h-8 rounded-full transition-colors relative ${settings.notifications ? 'bg-indigo-500' : 'bg-white/20'}`}
-              >
-                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.notifications ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-medium">Notification Sound Alert</h3>
-                <p className="text-white/50 text-sm">Play subtle vintage tone alerts on updates</p>
-              </div>
-              <button 
-                onClick={() => updateSettings({ notificationSound: !settings.notificationSound })}
-                className={`w-14 h-8 rounded-full transition-colors relative ${settings.notificationSound ? 'bg-indigo-500' : 'bg-white/20'}`}
-              >
-                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.notificationSound ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-          </div>
-        );
-      case 'security':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Security (PIN, 2FA)</h2>
-            
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <div>
-                <h3 className="text-xl font-medium">Console Passcode PIN</h3>
-                <p className="text-white/50 text-sm">Create a secure 4-digit lockout PIN</p>
-              </div>
-              <div className="flex gap-3">
-                <input 
-                  type="password" 
-                  maxLength={4}
-                  placeholder="••••"
-                  value={pinEntry}
-                  onChange={e => setPinEntry(e.target.value.replace(/\D/g, ''))}
-                  className="bg-black/50 border border-white/10 rounded-xl p-3 text-center text-2xl font-mono tracking-widest text-white w-32 focus:border-indigo-500 focus:outline-none"
-                />
-                <button 
-                  onClick={() => {
-                    if (pinEntry.length === 4) {
-                      updateSettings({ pinCode: pinEntry });
-                      setSecurityMessage('PIN passcode has been set successfully!');
-                      setPinEntry('');
-                    } else {
-                      setSecurityMessage('Please enter a valid 4-digit PIN code.');
-                    }
-                  }}
-                  className="px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold"
-                >
-                  Save PIN
-                </button>
-              </div>
-              {securityMessage && <p className="text-sm text-indigo-300 font-medium">{securityMessage}</p>}
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-medium">Enable 2FA Authenticator</h3>
-                <p className="text-white/50 text-sm">Bind authenticator software for login verification protection</p>
-              </div>
-              <button 
-                onClick={() => updateSettings({ twoFactorEnabled: !settings.twoFactorEnabled })}
-                className={`w-14 h-8 rounded-full transition-colors relative ${settings.twoFactorEnabled ? 'bg-indigo-500' : 'bg-white/20'}`}
-              >
-                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.twoFactorEnabled ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-
-            {settings.twoFactorEnabled && (
-              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col md:flex-row items-center gap-6">
-                <div className="w-24 h-24 bg-white p-2 rounded-xl flex items-center justify-center">
-                  <div className="w-full h-full bg-[radial-gradient(#000_3px,transparent_4px)] [background-size:10px_10px]" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="font-bold">Scan QR Code</h4>
-                  <p className="text-white/50 text-xs leading-relaxed">Scan with Google Authenticator or Microsoft Authenticator app to complete the multi-factor protection link setup.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      case 'storage':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Storage Manager</h2>
-            
-            <div className="bg-white/5 border border-white/10 p-8 rounded-3xl space-y-6">
-               <div className="flex justify-between items-end">
-                  <div>
-                     <h3 className="text-xl font-medium">System Storage Usage</h3>
-                     <p className="text-white/50 text-sm mt-1">Local Browser IndexedDB buffers</p>
-                  </div>
-                  <div className="text-right">
-                     <p className="text-2xl font-bold">{parseFloat((availableStorage.games + availableStorage.saves).toFixed(1))} GB <span className="text-lg text-white/50 font-normal">/ {(availableStorage.games + availableStorage.saves + availableStorage.free).toFixed(0)} GB</span></p>
-                  </div>
-               </div>
-               <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden flex">
-                  <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${(availableStorage.games / 10) * 100}%` }} />
-                  <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${(availableStorage.saves / 10) * 100}%` }} />
-               </div>
-               <div className="flex flex-wrap gap-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-indigo-500"/> Games ({availableStorage.games.toFixed(1)} GB)
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-purple-500"/> Save Files ({availableStorage.saves.toFixed(1)} GB)
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-white/10"/> Free Space ({availableStorage.free.toFixed(1)} GB)
-                  </div>
-               </div>
-            </div>
-
-            <div className="flex gap-4">
-              <button 
-                onClick={clearROMCache}
-                className="flex-1 bg-red-600/20 hover:bg-red-600 hover:text-white text-red-300 py-4 rounded-xl font-bold transition-all border border-red-500/20 text-center"
-              >
-                Clear Cached ROM Buffers
-              </button>
-              <button 
-                onClick={() => {
-                  setAvailableStorage(prev => ({ ...prev, saves: 0.1, free: prev.free + (prev.saves - 0.1) }));
-                  alert('All local save states cleared successfully!');
-                }}
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-4 rounded-xl font-bold transition-all border border-white/10 text-center"
-              >
-                Reset Save State Logs
-              </button>
-            </div>
-          </div>
-        );
       case 'emulator':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Emulator Settings (RetroArch/JS)</h2>
-            
+            <div>
+              <h2 className="text-3xl font-bold">Emulator Settings</h2>
+              <p className="text-white/50 text-sm mt-1">Configure active emulation shaders, screen ratios, and rewind state buffers</p>
+            </div>
+
             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
               <h3 className="text-xl font-medium">Shader Screen Filter</h3>
-              <p className="text-white/50 text-sm">Emulate vintage display screen technologies</p>
-              <div className="grid grid-cols-4 gap-2">
+              <p className="text-white/50 text-sm">Emulate vintage display CRT cathode ray screen technologies</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {[
                   { id: 'none', name: 'None (Raw Pixel)' },
                   { id: 'scanlines', name: 'CRT Scanlines' },
@@ -652,7 +214,7 @@ export default function SettingsApp() {
                   <button 
                     key={filter.id}
                     onClick={() => updateSettings({ emulatorFilter: filter.id as any })}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all ${settings.emulatorFilter === filter.id ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-white/5 bg-black/20 text-white/60'}`}
+                    className={`p-3.5 rounded-xl border text-xs font-bold transition-all ${settings.emulatorFilter === filter.id ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-white/5 bg-black/20 text-white/60'}`}
                   >
                     {filter.name}
                   </button>
@@ -672,7 +234,7 @@ export default function SettingsApp() {
                   <button 
                     key={aspect.id}
                     onClick={() => updateSettings({ emulatorAspectRatio: aspect.id as any })}
-                    className={`p-3 rounded-xl border text-xs font-bold transition-all ${settings.emulatorAspectRatio === aspect.id ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-white/5 bg-black/20 text-white/60'}`}
+                    className={`p-3.5 rounded-xl border text-xs font-bold transition-all ${settings.emulatorAspectRatio === aspect.id ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-white/5 bg-black/20 text-white/60'}`}
                   >
                     {aspect.name}
                   </button>
@@ -684,7 +246,7 @@ export default function SettingsApp() {
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="text-xl font-medium">Rewind Buffer Duration</h3>
-                  <p className="text-white/50 text-sm">Allocate time buffer memory for realtime rewinding</p>
+                  <p className="text-white/50 text-sm">Allocate live memory buffers for real-time rewinding capability</p>
                 </div>
                 <span className="text-2xl font-bold text-indigo-400 font-mono">{settings.emulatorRewind} sec</span>
               </div>
@@ -699,13 +261,88 @@ export default function SettingsApp() {
             </div>
           </div>
         );
-      case 'cloudgaming':
+
+      case 'controller':
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-3xl font-bold">Cloud Gaming Settings</h2>
-                <p className="text-white/50 text-sm mt-1">Configure live high-definition rom distribution stream nodes</p>
+                <h2 className="text-3xl font-bold">Controller Settings</h2>
+                <p className="text-white/50 text-sm mt-1">Configure keyboard bindings, active mappings, and test vibration feedback</p>
+              </div>
+              <button 
+                onClick={testRumble}
+                className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${rumbleTest ? 'bg-indigo-600 animate-bounce' : 'bg-white/10 hover:bg-white/20'}`}
+              >
+                <Radio className="w-5 h-5 text-indigo-400" /> {rumbleTest ? 'Vibrating...' : 'Test Rumble Feedback'}
+              </button>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
+              <h3 className="text-xl font-semibold mb-2">Keyboard Bindings Remap</h3>
+              <p className="text-white/40 text-xs mb-4">Click a button to map it to a physical keyboard key</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {Object.keys(keyMappings).map((btn) => (
+                  <div key={btn} className="bg-black/40 border border-white/5 p-4 rounded-xl flex flex-col justify-between items-center gap-2">
+                    <span className="text-sm text-white/50">{btn}</span>
+                    <button 
+                      onClick={() => handleRemapClick(btn)}
+                      className="px-4 py-2 bg-white/10 hover:bg-white/20 hover:border-white/30 border border-white/10 rounded-lg text-sm text-indigo-300 font-mono transition-all w-full text-center"
+                    >
+                      {remapKey === btn ? 'Press any Key...' : keyMappings[btn]}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <h3 className="text-xl font-semibold">Smartphone Controller Pairing</h3>
+              <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-2">
+                <p className="text-sm text-indigo-200">
+                  You can pair any smartphone as a virtual touchscreen gamepad!
+                </p>
+                <p className="text-xs text-white/50">
+                  Open the unique accessories link on your phone and input the console active session code to play retro games with touch triggers.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <h3 className="text-xl font-semibold">Active Connected Interfaces</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping" />
+                    <div>
+                      <h4 className="font-bold text-sm">Keyboard Link (Emulated)</h4>
+                      <p className="text-xs text-white/40">Active control mapping layout #1</p>
+                    </div>
+                  </div>
+                  <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded font-bold">PORT 1</span>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-xl opacity-60">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 bg-zinc-500 rounded-full" />
+                    <div>
+                      <h4 className="font-bold text-sm">DualSense Bluetooth Controller</h4>
+                      <p className="text-xs text-white/40">Standby bluetooth discovery mode</p>
+                    </div>
+                  </div>
+                  <span className="text-xs bg-white/10 text-white/60 px-2.5 py-1 rounded font-bold">PORT 2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'performance':
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-3xl font-bold">Performance & Diagnostics</h2>
+                <p className="text-white/50 text-sm mt-1">Configure thread speed targets, latency ping routes, and test hardware stability</p>
               </div>
               <button 
                 onClick={runLatencyTest}
@@ -718,7 +355,7 @@ export default function SettingsApp() {
             </div>
 
             {latencyResult && (
-              <div className="grid grid-cols-3 gap-4 bg-indigo-500/10 border border-indigo-500/30 p-6 rounded-2xl animate-fade-in text-center">
+              <div className="grid grid-cols-3 gap-4 bg-indigo-500/10 border border-indigo-500/30 p-6 rounded-2xl text-center">
                 <div>
                   <span className="text-white/50 text-xs uppercase tracking-widest font-bold block mb-1">Ping Latency</span>
                   <span className="text-3xl font-mono font-bold text-indigo-300">{latencyResult.ping} ms</span>
@@ -734,115 +371,10 @@ export default function SettingsApp() {
               </div>
             )}
 
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <h3 className="text-xl font-semibold">Edge Server Node Location</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {['Automatic Detect', 'US-East Node', 'Europe-West Node', 'Asia-East Node'].map((node, i) => (
-                  <button key={node} className={`p-4 rounded-xl border text-sm font-bold ${i === 0 ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-white/5 bg-black/20 text-white/60'}`}>
-                    {node}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      case 'voice':
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-3xl font-bold">Voice Chat Settings</h2>
-                <p className="text-white/50 text-sm mt-1">Configure audio input signals and test voice activation levels</p>
-              </div>
-              <button 
-                onClick={() => setVoiceTesting(!voiceTesting)}
-                className={`px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${voiceTesting ? 'bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20'}`}
-              >
-                <Mic className="w-5 h-5 text-indigo-400" />
-                {voiceTesting ? 'Stop Mic Test' : 'Start Mic Diagnostic'}
-              </button>
-            </div>
-
             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-medium">Allow Multiplayer Voice Channels</h3>
-                <p className="text-white/50 text-sm">Link microphone when entering multi-user pairing</p>
-              </div>
-              <button 
-                onClick={() => updateSettings({ voiceChat: !settings.voiceChat })}
-                className={`w-14 h-8 rounded-full transition-colors relative ${settings.voiceChat ? 'bg-indigo-500' : 'bg-white/20'}`}
-              >
-                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.voiceChat ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-xl font-medium">Microphone Input Level</h3>
-                <span className="text-lg font-bold font-mono text-indigo-400">{settings.micVolume}%</span>
-              </div>
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                value={settings.micVolume} 
-                onChange={e => updateSettings({ micVolume: parseInt(e.target.value) })}
-                className="w-full accent-indigo-500 h-1 bg-white/20 rounded-lg cursor-pointer" 
-              />
-              
-              <div className="h-10 bg-black/40 border border-white/5 rounded-xl flex items-center justify-center px-4 gap-1.5 overflow-hidden">
-                {voiceVolume.map((vol, i) => (
-                  <div 
-                    key={i} 
-                    className="w-2.5 bg-indigo-500 rounded transition-all duration-100" 
-                    style={{ height: `${vol}%` }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      case 'remoteplay':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Remote Play</h2>
-            
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-medium">Activate Remote Streaming Node</h3>
-                <p className="text-white/50 text-sm">Allow virtual controls connection streaming from secondary browser screen</p>
-              </div>
-              <button 
-                onClick={() => updateSettings({ remotePlay: !settings.remotePlay })}
-                className={`w-14 h-8 rounded-full transition-colors relative ${settings.remotePlay ? 'bg-indigo-500' : 'bg-white/20'}`}
-              >
-                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.remotePlay ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-
-            {settings.remotePlay && (
-              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-                <h3 className="font-bold text-lg">Remote Device Pairing Code</h3>
-                <p className="text-white/50 text-sm leading-relaxed">Enter this pairing code inside your remote browser window or console controller app to mirror the game viewport.</p>
-                <div className="bg-black/50 border border-white/5 p-6 rounded-2xl flex items-center justify-center text-center">
-                  <div>
-                    <span className="text-4xl font-mono font-bold text-indigo-400 tracking-widest uppercase">7W9E</span>
-                    <p className="text-xs text-white/30 tracking-wider mt-2 uppercase font-bold">LINK TOKEN CODE (ACTIVE)</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      case 'performance':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Performance Mode</h2>
-            
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-medium">High Performance rendering (Low Latency)</h3>
-                <p className="text-white/50 text-sm">Boost thread frame outputs to max capability limits</p>
+                <h3 className="text-xl font-medium">Low-Latency WebAssembly Engine</h3>
+                <p className="text-white/50 text-sm">Boost thread frame outputs to max capabilities</p>
               </div>
               <button 
                 onClick={() => updateSettings({ performanceMode: !settings.performanceMode })}
@@ -853,7 +385,7 @@ export default function SettingsApp() {
             </div>
 
             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <h3 className="text-xl font-medium">System frame Rate Cap</h3>
+              <h3 className="text-xl font-medium">Emulation FPS Target Cap</h3>
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { id: '30', label: '30 FPS (Power Save)' },
@@ -863,250 +395,468 @@ export default function SettingsApp() {
                   <button 
                     key={item.id}
                     onClick={() => updateSettings({ frameRateTarget: item.id as any })}
-                    className={`p-4 rounded-xl border text-sm font-bold transition-all ${settings.frameRateTarget === item.id ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-white/5 bg-black/20 text-white/60'}`}
+                    className={`p-3.5 rounded-xl border text-xs font-bold transition-all ${settings.frameRateTarget === item.id ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-white/5 bg-black/20 text-white/60'}`}
                   >
                     {item.label}
                   </button>
                 ))}
               </div>
             </div>
-          </div>
-        );
-      case 'wallpaper':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Wallpaper Manager</h2>
-            <p className="text-white/50 text-sm">Customize visual presentation console desktop wallpapers</p>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {WALLPAPERS.map(wall => (
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-semibold">Microphone Input Signal</h3>
+                  <p className="text-white/50 text-sm">Diagnose voice volume buffers for multiplayer modes</p>
+                </div>
                 <button 
-                  key={wall.id}
-                  onClick={() => updateSettings({ wallpaper: wall.bg })}
-                  className={`relative aspect-[16/10] rounded-2xl overflow-hidden border transition-all ${settings.wallpaper === wall.bg ? 'border-indigo-500 ring-2 ring-indigo-500/40' : 'border-white/10 hover:border-white/30'}`}
+                  onClick={() => setVoiceTesting(!voiceTesting)}
+                  className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition-all ${voiceTesting ? 'bg-red-500 text-white animate-pulse' : 'bg-white/10 hover:bg-white/20'}`}
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${wall.bg}`} />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-3">
-                    <span className="font-bold text-sm text-white drop-shadow-md">{wall.label}</span>
-                  </div>
-                  {settings.wallpaper === wall.bg && (
-                    <div className="absolute top-2 right-2 bg-indigo-500 text-white p-1 rounded-full">
-                      <Check className="w-3 h-3" />
-                    </div>
-                  )}
+                  <Mic className="w-4 h-4 text-indigo-400" />
+                  {voiceTesting ? 'Stop Mic' : 'Test Mic'}
                 </button>
-              ))}
-            </div>
-          </div>
-        );
-      case 'autoupdate':
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-3xl font-bold">Auto Update Settings</h2>
-                <p className="text-white/50 text-sm mt-1">Keep system software and emulators running on top release builds</p>
               </div>
-              <button 
-                onClick={checkUpdates}
-                disabled={checkingUpdate}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-5 h-5 ${checkingUpdate ? 'animate-spin' : ''}`} />
-                {checkingUpdate ? 'Polling Updates...' : 'Check System Update'}
-              </button>
-            </div>
-
-            {updateMessage && (
-              <div className="bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-xl text-indigo-200 text-sm font-medium">
-                {updateMessage}
+              <div className="h-8 bg-black/40 border border-white/5 rounded-xl flex items-center justify-center px-4 gap-1 overflow-hidden">
+                {voiceVolume.map((vol, i) => (
+                  <div 
+                    key={i} 
+                    className="w-2 bg-indigo-500 rounded transition-all duration-100" 
+                    style={{ height: `${vol}%` }}
+                  />
+                ))}
               </div>
-            )}
-
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-medium">Automatic Software Updates</h3>
-                <p className="text-white/50 text-sm">Download and install firmware builds over-the-air</p>
-              </div>
-              <button 
-                onClick={() => updateSettings({ autoUpdate: !settings.autoUpdate })}
-                className={`w-14 h-8 rounded-full transition-colors relative ${settings.autoUpdate ? 'bg-indigo-500' : 'bg-white/20'}`}
-              >
-                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.autoUpdate ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-          </div>
-        );
-      case 'downloads':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Downloads Manager</h2>
-            
-            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-medium">Bandwidth Speed Limit</h3>
-                <p className="text-white/50 text-sm">Limit distribution server download speeds</p>
-              </div>
-              <select 
-                value={settings.downloadLimit}
-                onChange={e => updateSettings({ downloadLimit: e.target.value as any })}
-                className="bg-black/50 border border-white/10 text-white rounded-xl p-3 focus:outline-none focus:border-indigo-500 font-bold"
-              >
-                <option value="unlimited">Unlimited speed</option>
-                <option value="5">5 MB/s cap</option>
-                <option value="10">10 MB/s cap</option>
-                <option value="20">20 MB/s cap</option>
-              </select>
             </div>
 
             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <h3 className="text-xl font-semibold">Active ROM Downloads Queue</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
-                  <div>
-                    <h4 className="font-bold text-sm">Super Mario 64.z64</h4>
-                    <p className="text-xs text-white/40">Status: Completed • 8.0 MB</p>
-                  </div>
-                  <span className="text-xs bg-green-500/20 text-green-400 px-2.5 py-1 rounded font-bold">100% SUCCESS</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
-                  <div>
-                    <h4 className="font-bold text-sm">The Legend of Zelda.z64</h4>
-                    <p className="text-xs text-white/40">Status: Completed • 32.0 MB</p>
-                  </div>
-                  <span className="text-xs bg-green-500/20 text-green-400 px-2.5 py-1 rounded font-bold">100% SUCCESS</span>
-                </div>
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">Hardware Diagnostics Panel</h3>
+                <button 
+                  onClick={runDiagnostics}
+                  disabled={diagnosticRunning}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 ${diagnosticRunning ? 'animate-spin' : ''}`} />
+                  {diagnosticRunning ? 'Running diagnostics...' : 'Run Diagnostics'}
+                </button>
               </div>
-            </div>
-          </div>
-        );
-      case 'achievements':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Achievements Progress</h2>
-            <p className="text-white/50 text-sm">Completed achievements and interactive trophies</p>
-            
-            <div className="space-y-4">
-              {achievements.map(ach => (
-                <div key={ach.id} className={`p-5 rounded-2xl border flex items-center justify-between gap-4 transition-all ${ach.unlocked ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-white/5 border-white/10 opacity-60'}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl ${ach.unlocked ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/10 text-white/40'}`}>
-                      🏆
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-lg">{ach.title}</h4>
-                      <p className="text-sm text-white/60 mt-1">{ach.desc}</p>
-                    </div>
-                  </div>
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase ${ach.unlocked ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/40'}`}>
-                    {ach.unlocked ? 'Unlocked' : 'Locked'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      case 'wishlist':
-        const wishlistGames = games.filter(g => wishlist.includes(g.id));
-        return (
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Your Wishlist</h2>
-            <p className="text-white/50 text-sm">Save customized classic retro links to install onto console later</p>
-            
-            <div className="space-y-4">
-              {wishlistGames.map(game => (
-                <div key={game.id} className="bg-white/5 p-4 rounded-2xl flex items-center justify-between border border-white/5">
-                  <div className="flex items-center gap-4">
-                    {game.coverImage && <img src={game.coverImage} alt="" className="w-16 h-16 object-cover rounded-xl" />}
-                    <div>
-                      <h4 className="font-bold text-lg">{game.name}</h4>
-                      <p className="text-sm text-white/40">{game.size} • Core: {game.core}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => toggleWishlist(game.id)}
-                      className="px-4 py-2 bg-red-500/10 hover:bg-red-500 hover:text-white text-red-400 rounded-xl font-bold transition-all text-xs"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {wishlistGames.length === 0 && (
-                <div className="text-center text-white/30 py-16">
-                  <Heart className="w-16 h-16 text-white/10 mx-auto mb-4" />
-                  <p className="text-xl">Your wishlist is empty.</p>
+              {diagnosticLogs.length > 0 && (
+                <div className="bg-black/80 border border-white/10 p-5 rounded-2xl font-mono text-[10px] text-green-400 space-y-1 h-36 overflow-y-auto">
+                  {diagnosticLogs.map((log, i) => <div key={i}>&gt; {log}</div>)}
                 </div>
               )}
             </div>
           </div>
         );
-      case 'billing':
+
+      case 'cloud_storage':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Subscription & Billing</h2>
-            
-            <div className="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-indigo-500/30 p-8 rounded-3xl relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl" />
-               <span className="text-indigo-400 text-xs uppercase tracking-widest font-bold block mb-2">Current Tier</span>
-               <h3 className="text-4xl font-extrabold mb-2">{settings.subscriptionTier}</h3>
-               <p className="text-white/60 text-sm">Enjoy unlimited high-bandwidth save state caching storage nodes worldwide.</p>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-3xl font-bold">Cloud Saves & Storage</h2>
+                <p className="text-white/50 text-sm mt-1">Keep your high scores and game progress synchronized safely online via Firebase</p>
+              </div>
+              <button 
+                onClick={forceCloudSync}
+                disabled={cloudSyncing}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-5 h-5 ${cloudSyncing ? 'animate-spin' : ''}`} />
+                Force Cloud Backup
+              </button>
+            </div>
+
+            {syncMessage && (
+              <div className="bg-indigo-500/10 border border-indigo-500/30 p-4 rounded-xl text-indigo-200 text-sm">
+                {syncMessage}
+              </div>
+            )}
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-medium">Automatic Firebase Synced Saves</h3>
+                <p className="text-white/50 text-sm">Automatically pack and sync save blocks on game exits</p>
+              </div>
+              <button 
+                onClick={() => updateSettings({ cloudSyncEnabled: !settings.cloudSyncEnabled })}
+                className={`w-14 h-8 rounded-full transition-colors relative ${settings.cloudSyncEnabled ? 'bg-indigo-500' : 'bg-white/20'}`}
+              >
+                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.cloudSyncEnabled ? 'left-7' : 'left-1'}`} />
+              </button>
             </div>
 
             <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-              <h3 className="text-xl font-semibold">Redeem Promo Code Voucher</h3>
-              <div className="flex gap-3">
-                <input 
-                  type="text" 
-                  placeholder="Voucher Code (Try 'SUN50')" 
-                  value={voucherCode}
-                  onChange={e => setVoucherCode(e.target.value)}
-                  className="bg-black/50 border border-white/10 rounded-xl p-3.5 text-white flex-1 focus:border-indigo-500 focus:outline-none"
-                />
-                <button 
-                  onClick={redeemCode}
-                  className="px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold"
-                >
-                  Apply Voucher
-                </button>
+              <h3 className="text-xl font-semibold">Active Save Backups</h3>
+              <div className="space-y-2">
+                {[
+                  { game: 'Super Mario 64', size: '14 KB', slot: 'Save Slot 1', time: 'Last Backed Up: Just Now' },
+                  { game: 'The Legend of Zelda: Ocarina of Time', size: '124 KB', slot: 'Save Slot 3', time: 'Last Backed Up: 2 hours ago' }
+                ].map((save, i) => (
+                  <div key={i} className="flex justify-between items-center p-3.5 bg-black/30 rounded-xl border border-white/5">
+                    <div>
+                      <h4 className="font-bold text-sm">{save.game}</h4>
+                      <p className="text-xs text-white/40">{save.slot} • {save.size} • {save.time}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-all">Restore</button>
+                      <button className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all">Delete</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              {voucherMessage && <p className="text-sm text-indigo-300 font-medium">{voucherMessage}</p>}
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h3 className="text-xl font-medium">System Storage Usage</h3>
+                  <p className="text-white/50 text-sm mt-1">Local Browser IndexedDB buffers</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold font-mono">
+                    {parseFloat((availableStorage.games + availableStorage.saves).toFixed(1))} GB{' '}
+                    <span className="text-lg text-white/50 font-normal">/ {(availableStorage.games + availableStorage.saves + availableStorage.free).toFixed(0)} GB</span>
+                  </p>
+                </div>
+              </div>
+              <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden flex">
+                <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${(availableStorage.games / 10) * 100}%` }} />
+                <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${(availableStorage.saves / 10) * 100}%` }} />
+              </div>
+              <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-wider text-white/60">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-indigo-500"/> Games ({availableStorage.games.toFixed(1)} GB)
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-purple-500"/> Save Files ({availableStorage.saves.toFixed(1)} GB)
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-white/10"/> Free Space ({availableStorage.free.toFixed(1)} GB)
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <h3 className="text-xl font-semibold">Bandwidth Speed Limit</h3>
+              <div className="flex items-center justify-between">
+                <p className="text-white/50 text-sm">Limit server-side ROM download speed triggers</p>
+                <select 
+                  value={settings.downloadLimit}
+                  onChange={e => updateSettings({ downloadLimit: e.target.value as any })}
+                  className="bg-black/50 border border-white/10 text-white rounded-xl p-2.5 focus:outline-none focus:border-indigo-500 font-bold text-sm cursor-pointer"
+                >
+                  <option value="unlimited">Unlimited speed</option>
+                  <option value="5">5 MB/s cap</option>
+                  <option value="10">10 MB/s cap</option>
+                  <option value="20">20 MB/s cap</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={clearROMCache}
+                className="flex-1 bg-red-600/20 hover:bg-red-600 hover:text-white text-red-300 py-3.5 rounded-xl font-bold transition-all border border-red-500/20 text-center text-sm"
+              >
+                Clear Cached ROM Buffers
+              </button>
+              <button 
+                onClick={() => {
+                  setAvailableStorage(prev => ({ ...prev, saves: 0.1, free: prev.free + (prev.saves - 0.1) }));
+                  alert('All local save states cleared successfully!');
+                }}
+                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-3.5 rounded-xl font-bold transition-all border border-white/10 text-center text-sm"
+              >
+                Reset Save State Logs
+              </button>
             </div>
           </div>
         );
-      case 'support':
+
+      case 'themes':
         return (
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold mb-4">Feedback & Support</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
-                <h3 className="text-xl font-semibold">Contact Support</h3>
-                {supportSubmitted ? (
-                  <div className="bg-indigo-500/10 border border-indigo-500/30 p-6 rounded-xl text-indigo-200 text-center space-y-2 animate-fade-in">
-                    <Check className="w-10 h-10 text-green-400 mx-auto" />
-                    <h4 className="font-bold">Feedback Submitted</h4>
-                    <p className="text-xs text-white/50 leading-relaxed">Thank you! Your ticket response has been recorded successfully. Our engineers will check the diagnostics details.</p>
+            <div>
+              <h2 className="text-3xl font-bold">Themes & Wallpaper</h2>
+              <p className="text-white/50 text-sm mt-1">Select visual accent style and customize wallpaper desktop gradients</p>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-medium">Midnight Dark Palette</h3>
+                <p className="text-white/50 text-sm">Switch to eye-safe midnight black colors</p>
+              </div>
+              <button 
+                onClick={() => updateSettings({ darkMode: !settings.darkMode })}
+                className={`w-14 h-8 rounded-full transition-colors relative ${settings.darkMode ? 'bg-indigo-500' : 'bg-white/20'}`}
+              >
+                <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${settings.darkMode ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <h3 className="text-xl font-semibold">Active Palette Accent Theme</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {['Cosmic Slate', 'Neon Vapor', 'Midnight Blue', 'Retro Classic'].map(theme => (
+                  <button 
+                    key={theme}
+                    onClick={() => updateSettings({ theme })}
+                    className={`p-5 rounded-2xl border text-left transition-all ${settings.theme === theme ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5 hover:border-white/30'}`}
+                  >
+                    <h4 className="text-lg font-bold">{theme}</h4>
+                    {settings.theme === theme ? (
+                      <div className="mt-2 text-indigo-400 text-xs font-semibold flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Selected Accent
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-white/40 text-xs">Apply accent</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <h3 className="text-xl font-semibold font-sans">Wallpaper Desktop Gradient</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {WALLPAPERS.map(wall => (
+                  <button 
+                    key={wall.id}
+                    onClick={() => updateSettings({ wallpaper: wall.bg })}
+                    className={`relative aspect-[16/10] rounded-2xl overflow-hidden border transition-all ${settings.wallpaper === wall.bg ? 'border-indigo-500 ring-2 ring-indigo-500/40' : 'border-white/10 hover:border-white/30'}`}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${wall.bg}`} />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-3">
+                      <span className="font-bold text-xs text-white drop-shadow-md">{wall.label}</span>
+                    </div>
+                    {settings.wallpaper === wall.bg && (
+                      <div className="absolute top-2 right-2 bg-indigo-500 text-white p-1 rounded-full">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <div>
+                <h3 className="text-xl font-medium">Brightness Level</h3>
+                <p className="text-white/50 text-sm">Configure active console background luminance</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <Moon className="w-5 h-5 text-white/40" />
+                <input type="range" min="20" max="100" defaultValue="90" className="w-full accent-indigo-500 h-1 bg-white/20 rounded-lg cursor-pointer" />
+                <Play className="w-5 h-5 text-indigo-400 rotate-90" />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'profile':
+        const wishlistGames = games.filter(g => wishlist.includes(g.id));
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold">Gamer Profile & Badges</h2>
+              <p className="text-white/50 text-sm mt-1">Configure your gamer identity, unlockable achievements, and wishlists</p>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-3xl flex flex-col md:flex-row items-center gap-6">
+              <div className="relative group">
+                <img src={avatar} alt="Profile Avatar" className="w-24 h-24 rounded-full object-cover border-4 border-indigo-500 shadow-xl" />
+                <button 
+                  onClick={() => {
+                    const nextAvatar = prompt("Enter Image URL for avatar:");
+                    if (nextAvatar) setAvatar(nextAvatar);
+                  }}
+                  className="absolute inset-0 bg-black/75 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer font-bold text-center"
+                >
+                  Change Image
+                </button>
+              </div>
+              <div className="flex-1 text-center md:text-left space-y-2">
+                <input 
+                  type="text" 
+                  value={profileName} 
+                  onChange={e => setProfileName(e.target.value)}
+                  className="bg-transparent border-b border-transparent hover:border-white/20 focus:border-indigo-500 focus:outline-none text-2xl font-bold text-white"
+                />
+                <input 
+                  type="text" 
+                  value={profileBio} 
+                  onChange={e => setProfileBio(e.target.value)}
+                  placeholder="Enter status/bio..."
+                  className="bg-transparent border-b border-transparent hover:border-white/20 focus:border-indigo-500 focus:outline-none text-white/50 text-sm block w-full"
+                />
+              </div>
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-center min-w-[130px]">
+                <Trophy className="w-7 h-7 text-amber-400 mx-auto mb-1" />
+                <span className="text-2xl font-bold font-mono">14,200</span>
+                <p className="text-[10px] text-white/40 uppercase tracking-widest font-extrabold mt-1">GamerScore</p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <h3 className="text-xl font-semibold">User Level Stats</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Level 24 (Retro Adept)</span>
+                  <span className="font-mono text-indigo-400">8,200 / 10,000 XP</span>
+                </div>
+                <div className="w-full bg-white/10 h-3 rounded-full overflow-hidden">
+                  <div className="bg-indigo-500 h-full rounded-full" style={{ width: '82%' }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border border-indigo-500/20 p-6 rounded-3xl relative overflow-hidden">
+              <span className="text-indigo-400 text-xs uppercase tracking-widest font-bold block mb-2">Current Subscription Tier</span>
+              <h3 className="text-3xl font-extrabold mb-1">{settings.subscriptionTier}</h3>
+              <p className="text-white/50 text-xs leading-relaxed mb-4">Enjoy unlimited high-bandwidth save state caching storage nodes worldwide.</p>
+              <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-3">
+                <h4 className="text-sm font-bold">Redeem Promo Code Voucher</h4>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Voucher Code (Try 'SUN50')" 
+                    value={voucherCode}
+                    onChange={e => setVoucherCode(e.target.value)}
+                    className="bg-black/50 border border-white/10 rounded-xl p-2.5 text-white flex-1 focus:border-indigo-500 focus:outline-none text-sm font-semibold"
+                  />
+                  <button 
+                    onClick={redeemCode}
+                    className="px-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-colors"
+                  >
+                    Apply
+                  </button>
+                </div>
+                {voucherMessage && <p className="text-xs text-indigo-300 font-bold">{voucherMessage}</p>}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <h3 className="text-xl font-semibold">Achievements Badge Progress</h3>
+              <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+                {achievements.map(ach => (
+                  <div key={ach.id} className={`p-4 rounded-xl border flex items-center justify-between gap-4 transition-all ${ach.unlocked ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-white/5 border-white/5 opacity-50'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${ach.unlocked ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/10 text-white/40'}`}>
+                        🏆
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm">{ach.title}</h4>
+                        <p className="text-xs text-white/60 mt-0.5">{ach.desc}</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${ach.unlocked ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/10 text-white/40'}`}>
+                      {ach.unlocked ? 'Unlocked' : 'Locked'}
+                    </span>
                   </div>
-                ) : (
-                  <form onSubmit={e => { e.preventDefault(); setSupportSubmitted(true); }} className="space-y-4">
-                    <input type="text" required placeholder="User Name" className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500 text-sm" />
-                    <input type="email" required placeholder="Email Address" className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500 text-sm" />
-                    <textarea required placeholder="Write message or report console logs..." className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white min-h-[100px] focus:outline-none focus:border-indigo-500 text-sm" />
-                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all">Submit Feedback</button>
-                  </form>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <h3 className="text-xl font-semibold">Games Wishlist</h3>
+              <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+                {wishlistGames.map(game => (
+                  <div key={game.id} className="bg-white/5 p-3 rounded-xl flex items-center justify-between border border-white/5">
+                    <div className="flex items-center gap-3">
+                      {game.coverImage && <img src={game.coverImage} alt="" className="w-12 h-12 object-cover rounded-lg" />}
+                      <div>
+                        <h4 className="font-bold text-sm">{game.name}</h4>
+                        <p className="text-xs text-white/40">{game.size} • Core: {game.core}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => toggleWishlist(game.id)}
+                      className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500 hover:text-white text-red-400 rounded-lg font-bold transition-all text-[10px]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                {wishlistGames.length === 0 && (
+                  <div className="text-center text-white/30 py-8">
+                    <Heart className="w-12 h-12 text-white/10 mx-auto mb-2" />
+                    <p className="text-sm">Your wishlist is currently empty.</p>
+                  </div>
                 )}
               </div>
+            </div>
+          </div>
+        );
 
-              <div className="space-y-4">
+      case 'about':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold">System Info & Help</h2>
+              <p className="text-white/50 text-sm mt-1">Configure language, region, explore guides, and connect support pipelines</p>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
+              <h3 className="text-xl font-medium mb-4">System Language</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {['English', 'Spanish', 'French', 'Japanese', 'Bengali'].map(lang => (
+                  <button 
+                    key={lang}
+                    onClick={() => updateSettings({ language: lang })}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all text-sm ${settings.language === lang ? 'border-indigo-500 bg-indigo-500/10 text-white font-bold' : 'border-white/5 hover:bg-white/5 text-white/70'}`}
+                  >
+                    <span>{lang}</span>
+                    {settings.language === lang && <Check className="w-4 h-4 text-indigo-400" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
+              <h3 className="text-xl font-medium mb-4">Console Active Region</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {['North America', 'Europe', 'Asia', 'South America'].map(reg => (
+                  <button 
+                    key={reg}
+                    onClick={() => updateSettings({ region: reg })}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all text-sm ${settings.region === reg ? 'border-indigo-500 bg-indigo-500/10 text-white font-bold' : 'border-white/5 hover:bg-white/5 text-white/70'}`}
+                  >
+                    <span>{reg}</span>
+                    {settings.region === reg && <Check className="w-4 h-4 text-indigo-400" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">Over-The-Air Software Updates</h3>
+                <button 
+                  onClick={checkUpdates}
+                  disabled={checkingUpdate}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate ? 'animate-spin' : ''}`} />
+                  {checkingUpdate ? 'Polling...' : 'Check for Update'}
+                </button>
+              </div>
+              {updateMessage && (
+                <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl text-indigo-200 text-xs font-semibold">
+                  {updateMessage}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
                 <h3 className="text-xl font-semibold">Frequently Asked Questions</h3>
                 <div className="space-y-2">
                   {faqs.map((faq, i) => (
                     <div key={i} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
                       <button 
                         onClick={() => setActiveFaq(activeFaq === i ? null : i)}
-                        className="w-full text-left p-4 font-bold text-sm flex justify-between items-center hover:bg-white/5 transition-colors"
+                        className="w-full text-left p-3.5 font-bold text-xs flex justify-between items-center hover:bg-white/5 transition-colors"
                       >
                         <span>{faq.q}</span>
                         <ChevronRight className={`w-4 h-4 text-white/50 transition-transform ${activeFaq === i ? 'rotate-90' : ''}`} />
@@ -1120,42 +870,38 @@ export default function SettingsApp() {
                   ))}
                 </div>
               </div>
+
+              <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-3">
+                <h3 className="text-xl font-semibold">Contact Support</h3>
+                {supportSubmitted ? (
+                  <div className="bg-indigo-500/10 border border-indigo-500/30 p-6 rounded-xl text-indigo-200 text-center space-y-2 animate-fade-in">
+                    <Check className="w-8 h-8 text-green-400 mx-auto" />
+                    <h4 className="font-bold text-sm">Feedback Submitted</h4>
+                    <p className="text-[10px] text-white/50 leading-relaxed">Thank you! Your ticket response has been recorded successfully. Our support engineers will check your diagnostics details shortly.</p>
+                  </div>
+                ) : (
+                  <form onSubmit={e => { e.preventDefault(); setSupportSubmitted(true); }} className="space-y-3">
+                    <input type="text" required placeholder="Gamer ID / Name" className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500 text-xs" />
+                    <input type="email" required placeholder="Email Address" className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none focus:border-indigo-500 text-xs" />
+                    <textarea required placeholder="Write message or report console logs..." className="w-full bg-black/50 border border-white/10 rounded-xl p-2.5 text-white min-h-[80px] focus:outline-none focus:border-indigo-500 text-xs" />
+                    <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition-all text-xs">Submit Ticket</button>
+                  </form>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-6 rounded-3xl space-y-3">
+              <h3 className="text-xl font-bold text-white">SUN EMULATOR OS</h3>
+              <p className="text-white/50 text-xs">Version: 1.0.1-Stable Channel (LTS)</p>
+              <p className="text-white/50 text-xs">Core Engine: RetroArch JS & WebAssembly WebGPU v1.0.1</p>
+              <div className="h-px bg-white/10 my-2" />
+              <p className="text-white/70 text-xs leading-relaxed">
+                A beautiful, open-source custom-crafted emulation web operating system designed for next-generation virtual controls pairing, responsive high-bandwidth game ROM distribution, and automatic cloud backups.
+              </p>
             </div>
           </div>
         );
-      case 'about':
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-3xl font-bold">About Console</h2>
-                <p className="text-white/50 text-sm mt-1">Console specifications, diagnostic testing, and system information</p>
-              </div>
-              <button 
-                onClick={runDiagnostics}
-                disabled={diagnosticRunning}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-5 h-5 ${diagnosticRunning ? 'animate-spin' : ''}`} />
-                {diagnosticRunning ? 'Running Hardware Test...' : 'Run Diagnostics Test'}
-              </button>
-            </div>
 
-            {diagnosticLogs.length > 0 && (
-              <div className="bg-black/80 border border-white/10 p-6 rounded-2xl font-mono text-xs text-green-400 space-y-1.5 h-44 overflow-y-auto">
-                {diagnosticLogs.map((log, i) => <div key={i}>&gt; {log}</div>)}
-              </div>
-            )}
-
-            <div className="bg-white/5 border border-white/10 p-8 rounded-3xl space-y-4">
-               <h3 className="text-2xl font-bold text-white">SUN EMULATOR OS</h3>
-               <p className="text-white/50">Version: 1.0.1-Stable Channel (LTS)</p>
-               <p className="text-white/50">Core Engine: RetroArch JS & WebAssembly WebGPU v1.0.1</p>
-               <div className="h-px bg-white/10 my-4" />
-               <p className="text-white/70">A beautiful, open-source custom-crafted emulation web operating system designed for next-generation virtual controls pairing, responsive high-bandwidth game ROM distribution, and automatic cloud backups.</p>
-            </div>
-          </div>
-        );
       default:
         return null;
     }
@@ -1165,9 +911,10 @@ export default function SettingsApp() {
     <div className="h-full w-full bg-[#0a0a0a] text-white flex overflow-hidden">
       <div className="w-80 bg-black/50 border-r border-white/10 overflow-y-auto shrink-0 pb-10">
         <div className="p-8 sticky top-0 bg-black/50 backdrop-blur-xl z-10">
-          <h1 className="text-3xl font-bold">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-white/40 text-xs mt-1">SunOS Configuration Center</p>
         </div>
-        <div className="px-4 space-y-1">
+        <div className="px-4 space-y-1.5">
           {MENU_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -1175,13 +922,13 @@ export default function SettingsApp() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${isActive ? 'bg-indigo-600' : 'hover:bg-white/5'}`}
+                className={`w-full flex flex-col items-start p-4 rounded-2xl text-left transition-all ${isActive ? 'bg-indigo-600' : 'hover:bg-white/5'}`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <Icon className={`w-5 h-5 ${isActive ? 'text-white' : item.color}`} />
-                  <span className={`font-medium ${isActive ? 'text-white' : 'text-white/70'}`}>{item.label}</span>
+                  <span className={`font-bold text-sm ${isActive ? 'text-white' : 'text-white/80'}`}>{item.label}</span>
                 </div>
-                {isActive && <ChevronRight className="w-5 h-5 text-white/50" />}
+                <p className={`text-[10px] mt-1.5 leading-relaxed ${isActive ? 'text-white/60' : 'text-white/40'}`}>{item.desc}</p>
               </button>
             );
           })}
@@ -1203,32 +950,5 @@ export default function SettingsApp() {
         </AnimatePresence>
       </div>
     </div>
-  );
-}
-
-function SunIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2" />
-      <path d="M12 20v2" />
-      <path d="m4.93 4.93 1.41 1.41" />
-      <path d="m17.66 17.66 1.41 1.41" />
-      <path d="M2 12h2" />
-      <path d="M20 12h2" />
-      <path d="m6.34 17.66-1.41 1.41" />
-      <path d="m19.07 4.93-1.41 1.41" />
-    </svg>
   );
 }
