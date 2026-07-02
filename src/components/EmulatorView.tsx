@@ -69,9 +69,9 @@ export default function EmulatorView({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="h-full w-full bg-black relative"
+      <div
+        ref={containerRef}
+        className="fixed inset-0 z-[200] bg-black"
       onMouseMove={resetTimer}
       onMouseLeave={() => setShowUI(true)}
       onTouchStart={resetTimer}
