@@ -10,9 +10,12 @@ export function useEmulatorSession() {
   const [core, setCore] = useState<SupportedCore | null>(null);
   const [gameName, setGameName] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState(false);
-  
+  const [romKey, setRomKey] = useState(0);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const previousInputsRef = useRef<Record<string, Record<string, boolean>>>({});
+
+  const incrementRomKey = useCallback(() => setRomKey(k => k + 1), []);
 
   const simulateKey = useCallback((key: string, type: "keydown" | "keyup") => {
     let keyCode = 0;
@@ -42,6 +45,16 @@ export function useEmulatorSession() {
       }, '*');
     }
   }, []);
+
+  const sendStartEmulator = useCallback(() => {
+    if (isPlaying && gameUrl && core && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({
+        type: 'START_EMULATOR',
+        core: core,
+        gameUrl: gameUrl
+      }, '*');
+    }
+  }, [isPlaying, gameUrl, core]);
 
   useEffect(() => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -105,20 +118,8 @@ export function useEmulatorSession() {
   }, [simulateKey]);
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'EMULATOR_READY') {
-        if (isPlaying && gameUrl && core && iframeRef.current && iframeRef.current.contentWindow) {
-          iframeRef.current.contentWindow.postMessage({
-            type: 'START_EMULATOR',
-            core: core,
-            gameUrl: gameUrl
-          }, '*');
-        }
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [isPlaying, gameUrl, core]);
+    sendStartEmulator();
+  }, [sendStartEmulator, romKey]);
 
   return {
     pairCode,
@@ -131,6 +132,9 @@ export function useEmulatorSession() {
     setGameName,
     isPlaying,
     setIsPlaying,
-    iframeRef
+    iframeRef,
+    romKey,
+    incrementRomKey,
+    sendStartEmulator
   };
 }

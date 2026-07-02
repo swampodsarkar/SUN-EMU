@@ -2,5 +2,5 @@
   "name": "Sun Emulator",
   "description": "A browser-based retro gaming platform using EmulatorJS with a mobile controller web app.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

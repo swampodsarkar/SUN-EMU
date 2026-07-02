@@ -26,6 +26,7 @@ export default function FileExplorerApp({
   setCore, 
   setGameName, 
   setIsPlaying,
+  incrementRomKey,
   openEmulatorWindow
 }: any) {
 
@@ -48,6 +49,7 @@ export default function FileExplorerApp({
     
     // Automatically start
     setIsPlaying(true);
+    incrementRomKey();
     openEmulatorWindow();
   };
 

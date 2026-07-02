@@ -56,7 +56,7 @@ export default function OSView() {
       case 'controllers':
         return <ControllerApp {...session} />;
       case 'emulator':
-        return <EmulatorView isWindowed={true} {...session} />;
+        return <EmulatorView isWindowed={true} romKey={session.romKey} sendStartEmulator={session.sendStartEmulator} {...session} />;
       case 'ads':
         return <AdApp />;
       case 'calc':
