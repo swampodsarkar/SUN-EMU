@@ -225,7 +225,7 @@ export default function OSView() {
           </button>
           <button onClick={() => {
             if (store.currentUser) {
-               if (store.currentUser.email === 'mdswampodsakrar@gmail.com') {
+               if (store.currentUser.email === 'mdswampodsarkar@gmail.com') {
                   setShowAdminPanel(true);
                } else {
                   store.logout();
@@ -472,7 +472,7 @@ export default function OSView() {
             onClose={() => setShowLoginModal(false)} 
             onLoginSuccess={(email) => {
               setShowLoginModal(false);
-              if (email === 'mdswampodsakrar@gmail.com') {
+              if (email === 'mdswampodsarkar@gmail.com') {
                 setShowAdminPanel(true);
               }
             }}
