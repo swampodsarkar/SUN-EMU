@@ -29,9 +29,23 @@
             padding: 0 !important;
             background: #000 !important;
         }
-        /* Hide any unwanted headers, top bars or white spaces from EmulatorJS loader */
-        .ejs-header, .ejs-menu, .menu, .top-bar, .header {
+        /* Make sure the emulator canvas occupies the whole screen */
+        #game canvas, .emulator-canvas, canvas {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        /* Completely hide any EmulatorJS menu bar, loader headers, settings tabs, etc. to prevent blank gaps at the top */
+        .ejs-header, .ejs-menu, .menu, .top-bar, .header, .menu-bar, #menu, #menu-bar, .navbar, .nav {
             display: none !important;
+            height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }
     </style>
 </head>
@@ -55,6 +69,7 @@
                 window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
                 window.EJS_color = "#4f46e5";
                 window.EJS_startOnLoaded = true;
+                window.EJS_showMenu = false;
 
                 const script = document.createElement("script");
                 script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";

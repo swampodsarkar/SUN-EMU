@@ -1008,7 +1008,7 @@ export default function OSView() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[100] w-screen h-screen bg-black overflow-hidden"
+            className="fixed inset-0 z-[100] w-full h-full bg-black overflow-hidden"
           >
             {/* 100% Fullscreen Emulator Container */}
             <div className="absolute inset-0 w-full h-full z-10 bg-black">
@@ -1024,7 +1024,7 @@ export default function OSView() {
             {/* Subtle floating hint in top-right corner to prompt for Esc key */}
             <div className="absolute top-4 right-4 z-20 pointer-events-none opacity-30 hover:opacity-100 transition-opacity">
               <span className="bg-black/55 backdrop-blur-md text-white/50 px-3.5 py-1.5 rounded-full text-[10px] font-bold border border-white/5 tracking-wider select-none uppercase font-mono">
-                Press ESC to Pause & Share
+                Press ESC to Pause & Exit
               </span>
             </div>
 
@@ -1036,91 +1036,73 @@ export default function OSView() {
                   animate={{ opacity: 1, backdropFilter: 'blur(20px)' }}
                   exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
                   transition={{ duration: 0.2 }}
-                  className="absolute inset-0 z-[150] bg-black/85 flex items-center justify-center p-6"
+                  className="absolute inset-0 z-[150] bg-black/85 flex items-center justify-center p-4 md:p-6"
                 >
                   <motion.div
                     initial={{ scale: 0.95, y: 15, opacity: 0 }}
                     animate={{ scale: 1, y: 0, opacity: 1 }}
                     exit={{ scale: 0.95, y: 15, opacity: 0 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
-                    className="w-full max-w-4xl bg-slate-950/90 border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] text-white relative overflow-hidden backdrop-blur-3xl"
+                    className="w-full max-w-2xl bg-slate-950/95 border border-white/10 rounded-[2rem] p-6 md:p-10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] text-white relative overflow-hidden backdrop-blur-3xl"
                   >
                     {/* Glowing design background accents */}
                     <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
 
                     {/* Pause Header */}
-                    <div className="text-center mb-8 relative z-10">
-                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-bold tracking-widest uppercase mb-4 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
-                        <Gamepad2 className="w-4 h-4 animate-bounce" />
-                        GAME PAUSED
+                    <div className="text-center mb-6 relative z-10">
+                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-400 text-xs font-bold tracking-widest uppercase mb-4 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
+                        <Gamepad2 className="w-4 h-4" />
+                        EXIT GAME CONFIRMATION
                       </div>
-                      <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                        {session.gameName || 'Active Game'}
+                      <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        Quit {session.gameName || 'Active Game'}?
                       </h2>
                       <p className="text-xs text-white/40 mt-1 font-mono uppercase tracking-widest">
                         Core: {session.core?.toUpperCase()}
                       </p>
                     </div>
 
-                    {/* Options Grid: Action Buttons left, QR Code right */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10 items-center">
-                      
-                      {/* Left Block: Game Resume / Close Actions */}
-                      <div className="md:col-span-6 flex flex-col justify-center gap-4">
-                        <button
-                          onClick={() => setShowPauseMenu(false)}
-                          className="w-full bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/30 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 shadow-[0_4px_25px_rgba(99,102,241,0.25)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                        >
-                          <Play className="w-5 h-5 shrink-0 fill-current text-white" />
-                          <span className="text-lg">Resume Game</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setShowPauseMenu(false);
-                            session.setIsPlaying(false);
-                          }}
-                          className="w-full bg-white/5 hover:bg-red-500/15 border border-white/10 hover:border-red-500/30 text-white/80 hover:text-red-400 font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                        >
-                          <LogOut className="w-5 h-5 shrink-0" />
-                          <span className="text-lg">Exit to Console Home</span>
-                        </button>
-                      </div>
-
-                      {/* Visual separating line */}
-                      <div className="hidden md:block md:col-span-1 border-r border-white/5 h-44" />
-
-                      {/* Right Block: Real-time Multi-player Smartphone pairing */}
-                      <div className="md:col-span-5 flex flex-col items-center bg-white/5 rounded-[2rem] p-6 border border-white/5 shadow-inner">
-                        <h3 className="font-bold text-sm text-indigo-300 flex items-center gap-2 mb-2">
-                          <Smartphone className="w-4 h-4 text-indigo-400" />
-                          Instant Play with Friends
-                        </h3>
-                        <p className="text-[11px] text-white/50 mb-4 text-center leading-relaxed">
-                          Scan with your friend's phone to instantly join as an extra controller!
-                        </p>
-
-                        <div className="bg-white p-3 rounded-2xl mb-4 flex items-center justify-center aspect-square w-36 h-36 shadow-[0_0_35px_rgba(255,255,255,0.1)] ring-1 ring-white/10">
-                          <QRCodeSVG
-                            value={`${window.location.origin}/controller/${session.pairCode}`}
-                            style={{ width: '100%', height: '100%' }}
-                          />
-                        </div>
-
-                        <div className="text-center font-mono font-bold text-xl tracking-widest bg-black/40 py-2 px-5 rounded-xl mb-1 border border-white/5 w-full text-indigo-300" title="Controller Pairing Code">
-                          {session.pairCode}
-                        </div>
-
-                        <div className="flex justify-between items-center text-[11px] text-white/40 w-full mt-3 pt-3 border-t border-white/5">
-                          <span>Pairing Status:</span>
-                          <span className="font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/10">
-                            {session.controllers.length} Connected
-                          </span>
-                        </div>
-                      </div>
-
+                    <div className="bg-white/5 border border-white/5 p-4 rounded-xl text-center mb-8 relative z-10 max-w-md mx-auto">
+                      <p className="text-slate-300 text-xs md:text-sm leading-relaxed">
+                        Are you sure you want to stop playing this game and exit back to the console menu? All unsaved progress will be lost.
+                      </p>
                     </div>
+
+                    {/* Options Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10 max-w-lg mx-auto">
+                      <button
+                        onClick={() => setShowPauseMenu(false)}
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/30 text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_25px_rgba(99,102,241,0.25)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                      >
+                        <Play className="w-4 h-4 shrink-0 fill-current text-white" />
+                        <span className="text-sm">Keep Playing</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowPauseMenu(false);
+                          session.setIsPlaying(false);
+                        }}
+                        className="w-full bg-red-600 hover:bg-red-500 border border-red-400/30 text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_25px_rgba(239,68,68,0.25)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4 shrink-0" />
+                        <span className="text-sm">Exit Game</span>
+                      </button>
+                    </div>
+
+                    {/* QR Code and Multi-player Pairing inside a neat sub-drawer */}
+                    <div className="mt-8 pt-6 border-t border-white/5 flex flex-col items-center justify-center relative z-10">
+                      <div className="flex items-center gap-2 text-xs text-indigo-300 font-bold mb-3">
+                        <Smartphone className="w-4 h-4" />
+                        <span>Pair wireless controller:</span>
+                        <span className="font-mono bg-indigo-500/20 px-2 py-0.5 rounded text-white text-[10px] tracking-widest">{session.pairCode}</span>
+                      </div>
+                      <div className="flex gap-2 items-center text-[10px] text-white/40">
+                        <span>Scan the pairing QR Code from the settings dropdown on the home console.</span>
+                      </div>
+                    </div>
+
                   </motion.div>
                 </motion.div>
               )}

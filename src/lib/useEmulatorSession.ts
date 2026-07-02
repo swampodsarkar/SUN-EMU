@@ -15,30 +15,53 @@ export function useEmulatorSession() {
   const previousInputsRef = useRef<Record<string, Record<string, boolean>>>({});
 
   const simulateKey = useCallback((key: string, type: "keydown" | "keyup") => {
-    let keyCode = 0;
-    switch (key) {
-      case "ArrowUp": keyCode = 38; break;
-      case "ArrowDown": keyCode = 40; break;
-      case "ArrowLeft": keyCode = 37; break;
-      case "ArrowRight": keyCode = 39; break;
-      case "Enter": keyCode = 13; break;
-      case "Shift": keyCode = 16; break;
-      case "x": keyCode = 88; break;
-      case "z": keyCode = 90; break;
-      case "s": keyCode = 83; break;
-      case "a": keyCode = 65; break;
-      case "q": keyCode = 81; break;
-      case "w": keyCode = 87; break;
-    }
+    const KEY_MAP: Record<string, { keyCode: number; code: string; key: string }> = {
+      "ArrowUp": { keyCode: 38, code: "ArrowUp", key: "ArrowUp" },
+      "ArrowDown": { keyCode: 40, code: "ArrowDown", key: "ArrowDown" },
+      "ArrowLeft": { keyCode: 37, code: "ArrowLeft", key: "ArrowLeft" },
+      "ArrowRight": { keyCode: 39, code: "ArrowRight", key: "ArrowRight" },
+      "Enter": { keyCode: 13, code: "Enter", key: "Enter" },
+      "Shift": { keyCode: 16, code: "ShiftLeft", key: "Shift" },
+      "x": { keyCode: 88, code: "KeyX", key: "x" },
+      "z": { keyCode: 90, code: "KeyZ", key: "z" },
+      "s": { keyCode: 83, code: "KeyS", key: "s" },
+      "a": { keyCode: 65, code: "KeyA", key: "a" },
+      "q": { keyCode: 81, code: "KeyQ", key: "q" },
+      "w": { keyCode: 87, code: "KeyW", key: "w" },
+      "e": { keyCode: 69, code: "KeyE", key: "e" },
+      "r": { keyCode: 82, code: "KeyR", key: "r" },
+      "t": { keyCode: 84, code: "KeyT", key: "t" },
+      "y": { keyCode: 89, code: "KeyY", key: "y" },
+      "p": { keyCode: 80, code: "KeyP", key: "p" },
+      "Escape": { keyCode: 27, code: "Escape", key: "Escape" },
+      "f2": { keyCode: 113, code: "F2", key: "F2" },
+      "f4": { keyCode: 115, code: "F4", key: "F4" },
+      "f": { keyCode: 70, code: "KeyF", key: "f" },
+      "h": { keyCode: 72, code: "KeyH", key: "h" },
+      "i": { keyCode: 73, code: "KeyI", key: "i" },
+      "g": { keyCode: 71, code: "KeyG", key: "g" },
+      "k": { keyCode: 75, code: "KeyK", key: "k" },
+      "m": { keyCode: 77, code: "KeyM", key: "m" },
+      "o": { keyCode: 79, code: "KeyO", key: "o" },
+      "u": { keyCode: 85, code: "KeyU", key: "u" },
+      "v": { keyCode: 86, code: "KeyV", key: "v" },
+      "c": { keyCode: 67, code: "KeyC", key: "c" }
+    };
+
+    const mapped = KEY_MAP[key] || {
+      keyCode: key.length === 1 ? key.toUpperCase().charCodeAt(0) : 0,
+      code: key.length === 1 ? 'Key' + key.toUpperCase() : key,
+      key: key
+    };
 
     if (iframeRef.current && iframeRef.current.contentWindow) {
       iframeRef.current.contentWindow.postMessage({
         type: 'KEY_EVENT',
         eventType: type,
-        key: key,
-        code: key === 'Enter' ? 'Enter' : key === 'Shift' ? 'ShiftLeft' : key.includes('Arrow') ? key : 'Key' + key.toUpperCase(),
-        keyCode: keyCode,
-        which: keyCode
+        key: mapped.key,
+        code: mapped.code,
+        keyCode: mapped.keyCode,
+        which: mapped.keyCode
       }, '*');
     }
   }, []);
