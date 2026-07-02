@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { io, Socket } from "socket.io-client";
 import { Upload, MonitorPlay, Gamepad2, Users, Smartphone, Zap } from "lucide-react";
 import { motion } from "motion/react";
-import { cn } from "../lib/utils";
-import type { SupportedCore, EmulatorInputEvent } from "../types";
+import { ref, set, onChildAdded, onChildRemoved, onChildChanged, onDisconnect, remove } from "firebase/database";
+import { db } from "../lib/firebase";
+import type { SupportedCore } from "../types";
 
 const coreExtensions: Record<string, SupportedCore> = {
   ".nes": "nes",
@@ -25,7 +25,6 @@ const coreExtensions: Record<string, SupportedCore> = {
 };
 
 export default function EmulatorView() {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [pairCode, setPairCode] = useState<string>("");
   const [controllers, setControllers] = useState<any[]>([]);
   const [gameUrl, setGameUrl] = useState<string | null>(null);
@@ -34,37 +33,70 @@ export default function EmulatorView() {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const gameContainerRef = useRef<HTMLDivElement>(null);
+  const previousInputsRef = useRef<Record<string, Record<string, boolean>>>({});
 
   useEffect(() => {
-    // Connect to the socket server
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
-    const newSocket = io(backendUrl);
-    setSocket(newSocket);
+    // Generate a 6-digit pair code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setPairCode(code);
 
-    newSocket.on("connect", () => {
-      newSocket.emit("host-create-session");
+    const sessionRef = ref(db, `sessions/${code}`);
+    
+    // Cleanup on disconnect
+    onDisconnect(sessionRef).remove();
+
+    // Create session
+    set(sessionRef, {
+      createdAt: Date.now(),
+      hostAlive: true
     });
 
-    newSocket.on("session-created", ({ pairCode }) => {
-      setPairCode(pairCode);
-    });
+    const controllersRef = ref(db, `sessions/${code}/controllers`);
 
-    newSocket.on("controller-connected", ({ id, playerSlot }) => {
-      setControllers((prev) => [...prev, { id, playerSlot }]);
-    });
+    const handleControllerAdded = (snapshot: any) => {
+      const controllerId = snapshot.key;
+      const data = snapshot.val();
+      setControllers((prev) => [...prev, { id: controllerId, playerSlot: data.slot }]);
+      previousInputsRef.current[controllerId] = data.inputs || {};
+    };
 
-    newSocket.on("controller-disconnected", ({ id }) => {
-      setControllers((prev) => prev.filter((c) => c.id !== id));
-    });
+    const handleControllerRemoved = (snapshot: any) => {
+      const controllerId = snapshot.key;
+      setControllers((prev) => prev.filter((c) => c.id !== controllerId));
+      delete previousInputsRef.current[controllerId];
+    };
 
-    newSocket.on("emulator-input", ({ id, type, key, value }: EmulatorInputEvent) => {
-      // Find player slot if we want to support multiplayer mapped keys
-      // For now, mapping P1
-      simulateKey(key, type);
-    });
+    const handleControllerChanged = (snapshot: any) => {
+      const controllerId = snapshot.key;
+      const data = snapshot.val();
+      const currentInputs = data.inputs || {};
+      const previousInputs = previousInputsRef.current[controllerId] || {};
+
+      // Compare inputs and emit key events
+      Object.keys(currentInputs).forEach((key) => {
+        if (currentInputs[key] && !previousInputs[key]) {
+          simulateKey(key, "keydown");
+        } else if (!currentInputs[key] && previousInputs[key]) {
+          simulateKey(key, "keyup");
+        }
+      });
+
+      // Handle keys that were removed (set to false)
+      Object.keys(previousInputs).forEach((key) => {
+        if (previousInputs[key] && currentInputs[key] === undefined) {
+          simulateKey(key, "keyup");
+        }
+      });
+
+      previousInputsRef.current[controllerId] = currentInputs;
+    };
+
+    const unsubscribeAdded = onChildAdded(controllersRef, handleControllerAdded);
+    const unsubscribeRemoved = onChildRemoved(controllersRef, handleControllerRemoved);
+    const unsubscribeChanged = onChildChanged(controllersRef, handleControllerChanged);
 
     return () => {
-      newSocket.disconnect();
+      remove(sessionRef); // Cleanup on unmount
     };
   }, []);
 

@@ -1,17 +1,20 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { io, Socket } from "socket.io-client";
 import { Smartphone, Gamepad2, Wifi, Zap } from "lucide-react";
+import { ref, get, set, update, onDisconnect, onValue } from "firebase/database";
+import { db } from "../lib/firebase";
 import { cn } from "../lib/utils";
 
 export default function ControllerView() {
   const { code } = useParams();
   const navigate = useNavigate();
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [pairCode, setPairCode] = useState<string>(code || "");
   const [connected, setConnected] = useState(false);
   const [playerSlot, setPlayerSlot] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  const myIdRef = useRef<string>(Math.random().toString(36).substring(2, 9));
+  const inputsRef = useRef<Record<string, boolean>>({});
 
   // Prevent zooming and scrolling on mobile
   useEffect(() => {
@@ -33,60 +36,76 @@ export default function ControllerView() {
 
   useEffect(() => {
     // Attempt auto-connect if code exists
-    if (code && !socket) {
+    if (code && !connected) {
       connectToHost(code);
     }
   }, [code]);
 
-  const connectToHost = (codeToJoin: string) => {
+  const connectToHost = async (codeToJoin: string) => {
     if (!codeToJoin) return;
     
     setError(null);
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
-    const newSocket = io(backendUrl);
     
-    newSocket.on("connect", () => {
-      newSocket.emit("controller-join", { pairCode: codeToJoin });
-    });
-
-    newSocket.on("join-success", async ({ playerSlot }) => {
-      setConnected(true);
-      setPlayerSlot(playerSlot);
-      setSocket(newSocket);
-      // Change URL to include code if it wasn't there
-      if (!code) {
-        navigate(`/controller/${codeToJoin}`, { replace: true });
-      }
+    try {
+      const sessionRef = ref(db, `sessions/${codeToJoin}`);
+      const snapshot = await get(sessionRef);
       
-      // Try to enter fullscreen and lock landscape
-      try {
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
+      if (snapshot.exists()) {
+        const sessionData = snapshot.val();
+        const currentControllers = sessionData.controllers || {};
+        const controllerCount = Object.keys(currentControllers).length;
+        
+        if (controllerCount >= 4) {
+          setError("Room is full (max 4 controllers).");
+          return;
         }
-        if (screen.orientation && (screen.orientation as any).lock) {
-          await (screen.orientation as any).lock("landscape");
+
+        const newSlot = controllerCount + 1;
+        const myControllerRef = ref(db, `sessions/${codeToJoin}/controllers/${myIdRef.current}`);
+        
+        // Disconnect logic
+        onDisconnect(myControllerRef).remove();
+
+        await set(myControllerRef, {
+          slot: newSlot,
+          inputs: {}
+        });
+
+        setConnected(true);
+        setPlayerSlot(newSlot);
+        setPairCode(codeToJoin);
+
+        if (!code) {
+          navigate(`/controller/${codeToJoin}`, { replace: true });
         }
-      } catch (err) {
-        console.warn("Fullscreen/Orientation lock failed:", err);
+
+        // Listen for host disconnect
+        onValue(ref(db, `sessions/${codeToJoin}/hostAlive`), (snap) => {
+          if (!snap.exists()) {
+            setError("Host disconnected.");
+            setConnected(false);
+            setPlayerSlot(null);
+          }
+        });
+        
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          }
+          if (screen.orientation && (screen.orientation as any).lock) {
+            await (screen.orientation as any).lock("landscape");
+          }
+        } catch (err) {
+          console.warn("Fullscreen/Orientation lock failed:", err);
+        }
+
+      } else {
+        setError("Invalid or expired Pair Code.");
       }
-    });
-
-    newSocket.on("join-error", ({ message }) => {
-      setError(message);
-      newSocket.disconnect();
-    });
-
-    newSocket.on("host-disconnected", () => {
-      setError("Host disconnected.");
-      setConnected(false);
-      setPlayerSlot(null);
-      newSocket.disconnect();
-      setSocket(null);
-    });
-
-    newSocket.on("disconnect", () => {
-      setConnected(false);
-    });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to connect to session.");
+    }
   };
 
   const handleJoin = (e: React.FormEvent) => {
@@ -95,18 +114,22 @@ export default function ControllerView() {
   };
 
   const emitKey = useCallback((key: string, type: "keydown" | "keyup") => {
-    if (!socket || !connected) return;
+    if (!connected) return;
     
     if (type === "keydown" && navigator.vibrate) {
-      navigator.vibrate(15); // Haptic feedback
+      navigator.vibrate(15);
     }
 
-    socket.emit("controller-input", {
-      pairCode,
-      type,
-      key
+    const isPressed = type === "keydown";
+    if (inputsRef.current[key] === isPressed) return; // Prevent duplicate updates
+    
+    inputsRef.current[key] = isPressed;
+
+    // Send state to Firebase
+    update(ref(db, `sessions/${pairCode}/controllers/${myIdRef.current}/inputs`), {
+      [key]: isPressed ? true : null // Remove key if not pressed to save space, or false.
     });
-  }, [socket, connected, pairCode]);
+  }, [connected, pairCode]);
 
   // Button Component
   const GameButton = ({ 
