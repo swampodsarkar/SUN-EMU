@@ -3,8 +3,6 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
-import cookieParser from "cookie-parser";
-import authRoutes from "./auth-routes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,11 +10,6 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const httpServer = createServer(app);
-  
-  app.use(cookieParser());
-  
-  // API Routes
-  app.use("/auth", authRoutes);
   
   const PORT = 3000;
 
