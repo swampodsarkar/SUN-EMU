@@ -11,3 +11,10 @@ export interface EmulatorInputEvent {
   key: string;
   value?: number; // for analog
 }
+
+export interface ControllerState {
+  connected: boolean;
+  buttons: Record<string, boolean>;
+  axes: number[];
+}
+

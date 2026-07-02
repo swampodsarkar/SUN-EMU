@@ -8,6 +8,8 @@ import EmulatorView from './EmulatorView';
 import ControllerApp from './ControllerApp';
 import StoreApp from './StoreApp';
 import AdminPanel from './AdminPanel';
+import ExploreApp from './ExploreApp';
+import SettingsApp from './SettingsApp';
 import LoginModal from './LoginModal';
 import { useStore } from '../lib/store';
 
@@ -39,6 +41,9 @@ export default function OSView() {
   const session = useEmulatorSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const store = useStore();
+  const { settings } = useStore();
+  const themeClass = settings.darkMode ? "bg-black text-white" : "bg-gray-100 text-black";
+
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeIndex, setActiveIndex] = useState(0);
@@ -46,6 +51,8 @@ export default function OSView() {
   const [showPowerMenu, setShowPowerMenu] = useState(false);
   const [showControllerModal, setShowControllerModal] = useState(false);
   const [showStoreModal, setShowStoreModal] = useState(false);
+  const [showExploreModal, setShowExploreModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [bootSequence, setBootSequence] = useState(true);
@@ -123,6 +130,7 @@ export default function OSView() {
       subtitle: 'Latest News & Updates',
       bgGradient: 'from-violet-700 via-fuchsia-900 to-slate-900',
       icon: <Menu className="w-10 h-10 text-white" />,
+      action: () => setShowExploreModal(true),
       type: 'app'
     }
   ];
@@ -132,7 +140,7 @@ export default function OSView() {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (session.isPlaying || showControllerModal || showStoreModal || showLoginModal || showAdminPanel || bootSequence) return;
+      if (session.isPlaying || showControllerModal || showStoreModal || showExploreModal || showSettingsModal || showLoginModal || showAdminPanel || bootSequence) return;
       
       if (e.key === 'ArrowRight') {
         setActiveIndex(prev => Math.min(prev + 1, apps.length - 1));
@@ -176,7 +184,7 @@ export default function OSView() {
   }
 
   return (
-    <div className="h-screen w-full bg-black text-white overflow-hidden flex flex-col font-sans relative selection:bg-white/30">
+    <div className={`h-screen w-full bg-gradient-to-br ${settings.wallpaper} ${settings.darkMode ? "text-white" : "text-gray-900"} overflow-hidden flex flex-col font-sans relative selection:bg-white/30 transition-all duration-500`}>
       
       {/* Dynamic Background with Parallax and Blur */}
       <AnimatePresence mode="wait">
@@ -186,7 +194,7 @@ export default function OSView() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className={cn("absolute inset-0 z-0 bg-gradient-to-br transition-all", activeApp.bgGradient)}
+          className={cn("absolute inset-0 z-0 bg-gradient-to-br opacity-40 transition-all", activeApp.bgGradient)}
         />
       </AnimatePresence>
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/50 via-transparent to-black/95 pointer-events-none transition-all duration-1000" />
@@ -212,7 +220,7 @@ export default function OSView() {
           <button className="text-white/80 hover:text-white hover:scale-110 transition-all cursor-pointer bg-white/5 p-2.5 rounded-full hover:bg-white/10 backdrop-blur-md">
             <Search className="w-6 h-6" />
           </button>
-          <button className="text-white/80 hover:text-white hover:scale-110 transition-all cursor-pointer bg-white/5 p-2.5 rounded-full hover:bg-white/10 backdrop-blur-md">
+          <button onClick={() => setShowSettingsModal(true)} className="text-white/80 hover:text-white hover:scale-110 transition-all cursor-pointer bg-white/5 p-2.5 rounded-full hover:bg-white/10 backdrop-blur-md">
             <Settings className="w-6 h-6" />
           </button>
           <button onClick={() => {
@@ -393,6 +401,43 @@ export default function OSView() {
               <X className="w-6 h-6 group-hover:scale-110 transition-transform" />
             </button>
             <ControllerApp pairCode={session.pairCode} controllers={session.controllers} />
+          </motion.div>
+        )}
+
+        
+        {showExploreModal && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 z-[120] bg-black"
+          >
+            <button 
+              onClick={() => setShowExploreModal(false)}
+              className="absolute top-8 right-8 z-[130] bg-white/10 hover:bg-white text-white hover:text-black p-3 rounded-full backdrop-blur-md transition-all shadow-lg group"
+            >
+              <X className="w-6 h-6 group-hover:scale-110 transition-transform" />
+            </button>
+            <ExploreApp />
+          </motion.div>
+        )}
+
+        {showSettingsModal && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 z-[120] bg-black"
+          >
+            <button 
+              onClick={() => setShowSettingsModal(false)}
+              className="absolute top-8 right-8 z-[130] bg-white/10 hover:bg-white text-white hover:text-black p-3 rounded-full backdrop-blur-md transition-all shadow-lg group"
+            >
+              <X className="w-6 h-6 group-hover:scale-110 transition-transform" />
+            </button>
+            <SettingsApp />
           </motion.div>
         )}
 
