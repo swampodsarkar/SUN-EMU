@@ -60,12 +60,45 @@ export default function OSView() {
   const [showPairingDropdown, setShowPairingDropdown] = useState(false);
   const [showGamePairingDropdown, setShowGamePairingDropdown] = useState(false);
   const [bootSequence, setBootSequence] = useState(true);
+  const [showPauseMenu, setShowPauseMenu] = useState(false);
 
   useEffect(() => { store.incrementGuestCount();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     setTimeout(() => setBootSequence(false), 2500);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'ESC_PRESSED') {
+        if (session.isPlaying) {
+          setShowPauseMenu(prev => !prev);
+        }
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (session.isPlaying) {
+          e.preventDefault();
+          setShowPauseMenu(prev => !prev);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [session.isPlaying]);
+
+  useEffect(() => {
+    if (!session.isPlaying) {
+      setShowPauseMenu(false);
+    }
+  }, [session.isPlaying]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -974,8 +1007,8 @@ export default function OSView() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="fixed inset-0 z-[100] bg-black flex flex-col overflow-hidden"
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[100] w-screen h-screen bg-black overflow-hidden"
           >
             {/* 100% Fullscreen Emulator Container */}
             <div className="absolute inset-0 w-full h-full z-10 bg-black">
@@ -987,85 +1020,111 @@ export default function OSView() {
                 core={session.core}
               />
             </div>
-            
-            {/* Floating Top Controls Overlay */}
-            <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
-              {/* Left Side: Game Details */}
-              <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full text-white pointer-events-auto shadow-lg select-none">
-                <Gamepad2 className="w-4 h-4 text-indigo-400" />
-                <span className="font-bold text-xs tracking-wide">{session.gameName || 'Active Game'}</span>
-                <span className="bg-white/10 px-2 py-0.5 rounded text-[10px] font-mono text-white/60">
-                  {session.core?.toUpperCase()}
-                </span>
-              </div>
-              
-              {/* Middle Side: Controller Pair QR Code Hover/Trigger */}
-              <div className="relative pointer-events-auto">
-                <button 
-                  onClick={() => setShowGamePairingDropdown(!showGamePairingDropdown)}
-                  className="flex items-center gap-2 bg-indigo-600/80 hover:bg-indigo-600 border border-indigo-400/50 px-4 py-2 rounded-full text-white font-bold text-xs hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-[0_0_20px_rgba(99,102,241,0.4)]"
+
+            {/* Subtle floating hint in top-right corner to prompt for Esc key */}
+            <div className="absolute top-4 right-4 z-20 pointer-events-none opacity-30 hover:opacity-100 transition-opacity">
+              <span className="bg-black/55 backdrop-blur-md text-white/50 px-3.5 py-1.5 rounded-full text-[10px] font-bold border border-white/5 tracking-wider select-none uppercase font-mono">
+                Press ESC to Pause & Share
+              </span>
+            </div>
+
+            {/* Premium Glassmorphic Escape Pause Menu Overlay */}
+            <AnimatePresence>
+              {showPauseMenu && (
+                <motion.div
+                  initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                  animate={{ opacity: 1, backdropFilter: 'blur(20px)' }}
+                  exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0 z-[150] bg-black/85 flex items-center justify-center p-6"
                 >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  <span>Connect Controller: <span className="font-mono bg-black/40 px-2 py-0.5 rounded ml-1 text-white">{session.pairCode}</span></span>
-                </button>
-                
-                <AnimatePresence>
-                  {showGamePairingDropdown && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 15, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute left-1/2 -translate-x-1/2 mt-3 w-80 bg-slate-955/95 border border-white/15 backdrop-blur-3xl rounded-[2rem] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.6)] text-white"
-                    >
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-base text-indigo-300 flex items-center gap-2">
-                          <Smartphone className="w-5 h-5 text-indigo-400" />
-                          🎮 Join as Player
-                        </h3>
-                        <button 
-                          onClick={() => setShowGamePairingDropdown(false)}
-                          className="text-white/40 hover:text-white p-1 rounded-full hover:bg-white/5 transition-colors cursor-pointer"
+                  <motion.div
+                    initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                    animate={{ scale: 1, y: 0, opacity: 1 }}
+                    exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="w-full max-w-4xl bg-slate-950/90 border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] text-white relative overflow-hidden backdrop-blur-3xl"
+                  >
+                    {/* Glowing design background accents */}
+                    <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                    {/* Pause Header */}
+                    <div className="text-center mb-8 relative z-10">
+                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-bold tracking-widest uppercase mb-4 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+                        <Gamepad2 className="w-4 h-4 animate-bounce" />
+                        GAME PAUSED
+                      </div>
+                      <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        {session.gameName || 'Active Game'}
+                      </h2>
+                      <p className="text-xs text-white/40 mt-1 font-mono uppercase tracking-widest">
+                        Core: {session.core?.toUpperCase()}
+                      </p>
+                    </div>
+
+                    {/* Options Grid: Action Buttons left, QR Code right */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10 items-center">
+                      
+                      {/* Left Block: Game Resume / Close Actions */}
+                      <div className="md:col-span-6 flex flex-col justify-center gap-4">
+                        <button
+                          onClick={() => setShowPauseMenu(false)}
+                          className="w-full bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/30 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 shadow-[0_4px_25px_rgba(99,102,241,0.25)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                         >
-                          <X className="w-4 h-4" />
+                          <Play className="w-5 h-5 shrink-0 fill-current text-white" />
+                          <span className="text-lg">Resume Game</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setShowPauseMenu(false);
+                            session.setIsPlaying(false);
+                          }}
+                          className="w-full bg-white/5 hover:bg-red-500/15 border border-white/10 hover:border-red-500/30 text-white/80 hover:text-red-400 font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                        >
+                          <LogOut className="w-5 h-5 shrink-0" />
+                          <span className="text-lg">Exit to Console Home</span>
                         </button>
                       </div>
-                      
-                      <p className="text-xs text-white/60 mb-4 leading-relaxed text-center">
-                        Scan to play together! Use your mobile device as a wireless game controller instantly.
-                      </p>
-                      
-                      <div className="bg-white p-4 rounded-2xl mb-4 flex items-center justify-center aspect-square max-w-[160px] mx-auto shadow-lg">
-                        <QRCodeSVG 
-                          value={`${window.location.origin}/controller/${session.pairCode}`} 
-                          style={{ width: '100%', height: '100%' }}
-                        />
+
+                      {/* Visual separating line */}
+                      <div className="hidden md:block md:col-span-1 border-r border-white/5 h-44" />
+
+                      {/* Right Block: Real-time Multi-player Smartphone pairing */}
+                      <div className="md:col-span-5 flex flex-col items-center bg-white/5 rounded-[2rem] p-6 border border-white/5 shadow-inner">
+                        <h3 className="font-bold text-sm text-indigo-300 flex items-center gap-2 mb-2">
+                          <Smartphone className="w-4 h-4 text-indigo-400" />
+                          Instant Play with Friends
+                        </h3>
+                        <p className="text-[11px] text-white/50 mb-4 text-center leading-relaxed">
+                          Scan with your friend's phone to instantly join as an extra controller!
+                        </p>
+
+                        <div className="bg-white p-3 rounded-2xl mb-4 flex items-center justify-center aspect-square w-36 h-36 shadow-[0_0_35px_rgba(255,255,255,0.1)] ring-1 ring-white/10">
+                          <QRCodeSVG
+                            value={`${window.location.origin}/controller/${session.pairCode}`}
+                            style={{ width: '100%', height: '100%' }}
+                          />
+                        </div>
+
+                        <div className="text-center font-mono font-bold text-xl tracking-widest bg-black/40 py-2 px-5 rounded-xl mb-1 border border-white/5 w-full text-indigo-300" title="Controller Pairing Code">
+                          {session.pairCode}
+                        </div>
+
+                        <div className="flex justify-between items-center text-[11px] text-white/40 w-full mt-3 pt-3 border-t border-white/5">
+                          <span>Pairing Status:</span>
+                          <span className="font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/10">
+                            {session.controllers.length} Connected
+                          </span>
+                        </div>
                       </div>
-                      
-                      <div className="text-center font-mono font-bold text-2xl tracking-widest bg-white/5 py-2 rounded-xl mb-3 border border-white/5 select-all">
-                        {session.pairCode}
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-xs text-white/50 border-t border-white/5 pt-3">
-                        <span>Connected Players:</span>
-                        <span className="font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                          {session.controllers.length} Connected
-                        </span>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              
-              {/* Right Side: Exit Game */}
-              <button 
-                onClick={() => session.setIsPlaying(false)}
-                className="bg-red-500/80 hover:bg-red-600 border border-red-400/35 text-white px-5 py-2 rounded-full backdrop-blur-md transition-all shadow-lg flex items-center gap-2 group text-xs font-bold pointer-events-auto cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                Close Game
-              </button>
-            </div>
+
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

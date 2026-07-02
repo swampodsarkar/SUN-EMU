@@ -6,16 +6,32 @@
     <title>Emulator</title>
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            overflow: hidden;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background-color: #000 !important;
+            overflow: hidden !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
+        #game, #game * {
+            box-sizing: border-box !important;
         }
         #game {
-            width: 100%;
-            height: 100%;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #000 !important;
+        }
+        /* Hide any unwanted headers, top bars or white spaces from EmulatorJS loader */
+        .ejs-header, .ejs-menu, .menu, .top-bar, .header {
+            display: none !important;
         }
     </style>
 </head>
@@ -62,6 +78,13 @@
         
         // Notify parent that iframe is ready
         window.parent.postMessage({ type: 'EMULATOR_READY' }, '*');
+
+        // Capture ESC key and notify parent
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.parent.postMessage({ type: 'ESC_PRESSED' }, '*');
+            }
+        }, true);
     </script>
 </body>
 </html>

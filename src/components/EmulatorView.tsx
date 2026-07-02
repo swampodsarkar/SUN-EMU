@@ -41,19 +41,15 @@ export default function EmulatorView({
   };
 
   return (
-    <div className="flex flex-col bg-black text-slate-100 relative overflow-hidden font-sans h-full w-full">
-      <main className="flex-1 flex flex-col items-center justify-center p-0 z-10 w-full h-full">
-        <div className="w-full h-full bg-black overflow-hidden relative flex-1">
-          <iframe
-            ref={iframeRef}
-            src="/emulator.html"
-            onLoad={handleIframeLoad}
-            className="w-full h-full border-0"
-            title="Emulator Game"
-            allow="gamepad; autoplay"
-          />
-        </div>
-      </main>
+    <div className="w-full h-full bg-black overflow-hidden relative">
+      <iframe
+        ref={iframeRef}
+        src="/emulator.html"
+        onLoad={handleIframeLoad}
+        className="absolute inset-0 w-full h-full border-0 block"
+        title="Emulator Game"
+        allow="gamepad; autoplay"
+      />
     </div>
   );
 }
