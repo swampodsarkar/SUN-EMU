@@ -16,7 +16,12 @@ export default function ControllerApp({
     setUrl(`${window.location.origin}/controller/${pairCode}`);
   }, [pairCode]);
 
-  const controllerList = Object.entries(controllers || {});
+  const controllerList = Array.isArray(controllers)
+    ? controllers
+    : Object.entries(controllers || {}).map(([id, val]: any) => ({
+        id,
+        playerSlot: val.slot || val.playerSlot || 1,
+      }));
 
   return (
     <div className="h-full w-full flex flex-col p-8 md:p-12 text-white font-sans relative overflow-hidden bg-transparent">
@@ -56,14 +61,16 @@ export default function ControllerApp({
                 <p className="font-light tracking-wide text-lg md:text-xl text-white/40">Waiting for connection...</p>
               </div>
             ) : (
-              controllerList.map(([id, state]) => (
-                <div key={id} className="bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[1.5rem] flex items-center justify-between hover:bg-white/10 transition-colors shadow-lg">
+              controllerList.map((item) => (
+                <div key={item.id} className="bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-[1.5rem] flex items-center justify-between hover:bg-white/10 transition-colors shadow-lg">
                   <div className="flex items-center gap-5">
                     <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner shrink-0">
                       <Smartphone className="w-7 h-7 md:w-8 md:h-8 text-white/80" />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-medium text-lg md:text-xl tracking-wide truncate">Player {id.slice(0, 4)}</div>
+                      <div className="font-medium text-lg md:text-xl tracking-wide truncate">
+                        Player {item.playerSlot} ({item.id.slice(0, 4).toUpperCase()})
+                      </div>
                       <div className="text-sm md:text-base text-green-400 flex items-center gap-2 mt-1 md:mt-2 font-medium">
                         <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 shrink-0" /> Connected
                       </div>

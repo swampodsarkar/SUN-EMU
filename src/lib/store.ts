@@ -145,10 +145,11 @@ export const useStore = create<GlobalState>((set, get) => ({
     subscriptionTier: 'Ultimate Retro Gamer'
   },
   login: (email, pass) => {
+    if (!email) return false;
     const cleanEmail = email.trim().toLowerCase();
     if (cleanEmail === 'mdswampodsarkar@gmail.com' && pass === '123456') {
       const users = get().users;
-      let user = users.find(u => u.email.trim().toLowerCase() === cleanEmail);
+      let user = users.find(u => u.email && u.email.trim().toLowerCase() === cleanEmail);
       if (!user) {
         user = { email: cleanEmail, banned: false };
         const userKey = cleanEmail.replace(/[\.\#\$\[\]]/g, '_');
@@ -164,7 +165,7 @@ export const useStore = create<GlobalState>((set, get) => ({
     }
     if (pass === '123456') {
        const users = get().users;
-       let user = users.find(u => u.email.trim().toLowerCase() === cleanEmail);
+       let user = users.find(u => u.email && u.email.trim().toLowerCase() === cleanEmail);
        if (!user) {
          user = { email: cleanEmail, banned: false };
          const userKey = cleanEmail.replace(/[\.\#\$\[\]]/g, '_');
@@ -190,10 +191,11 @@ export const useStore = create<GlobalState>((set, get) => ({
     remove(ref(db, `games/${id}`));
   },
   toggleBanUser: (email) => {
+    if (!email) return;
     const cleanEmail = email.trim().toLowerCase();
     const userKey = cleanEmail.replace(/[\.\#\$\[\]]/g, '_');
     const users = get().users;
-    const user = users.find(u => u.email.trim().toLowerCase() === cleanEmail);
+    const user = users.find(u => u.email && u.email.trim().toLowerCase() === cleanEmail);
     if (user) {
       setFirebase(ref(db, `users/${userKey}`), {
         email: cleanEmail,
@@ -298,9 +300,9 @@ onValue(ref(db, 'users'), (snapshot) => {
   const data = snapshot.val();
   if (data) {
     const usersList = Object.keys(data).map(key => ({
-      email: data[key].email,
-      banned: !!data[key].banned
-    }));
+      email: data[key]?.email || '',
+      banned: !!data[key]?.banned
+    })).filter(u => u.email && u.email.trim() !== '');
     useStore.setState({ users: usersList });
   } else {
     const initialUsers = {
