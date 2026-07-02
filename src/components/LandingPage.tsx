@@ -1,64 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gamepad2 } from 'lucide-react';
+import { Gamepad2, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [booted, setBooted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setBooted(true), 800);
-    return () => clearTimeout(t);
-  }, []);
-
   return (
-    <div
-      className="h-full w-full bg-[#050510] flex flex-col items-center justify-center font-sans relative overflow-hidden cursor-pointer"
-      onClick={() => navigate('/os')}
-    >
-      {/* Background gradient */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(0,114,206,0.08)_0%,transparent_70%)]" />
-      </div>
-
-      {!booted ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 1.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10"
+    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center relative overflow-hidden font-sans text-white">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/30 rounded-full blur-[128px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-600/20 rounded-full blur-[128px] pointer-events-none" />
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="z-10 flex flex-col items-center"
+      >
+        <div className="w-24 h-24 bg-indigo-500/20 border border-indigo-500/30 rounded-3xl flex items-center justify-center mb-8 shadow-[0_0_50px_rgba(99,102,241,0.2)]">
+          <Gamepad2 className="w-12 h-12 text-indigo-400" />
+        </div>
+        <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 bg-gradient-to-br from-white to-slate-400 bg-clip-text text-transparent text-center">
+          Sun Emulator
+        </h1>
+        <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-lg text-center leading-relaxed">
+          The ultimate web-based retro gaming platform. Turn your phone into a wireless controller instantly.
+        </p>
+        
+        <button 
+          onClick={() => navigate('/os')}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-5 rounded-2xl font-bold text-xl transition-all shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_50px_rgba(79,70,229,0.5)] flex items-center gap-3 hover:-translate-y-1 active:scale-95"
         >
-          <div className="w-28 h-28 rounded-[32px] bg-gradient-to-br from-[#0072ce]/20 to-[#0072ce]/5 border border-[#0072ce]/15 flex items-center justify-center shadow-[0_0_80px_rgba(0,114,206,0.1)]">
-            <Gamepad2 className="w-14 h-14 text-[#0072ce]/70" />
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 flex flex-col items-center"
-        >
-          <div className="w-24 h-24 rounded-[28px] bg-gradient-to-br from-[#0072ce]/15 to-[#0072ce]/5 border border-[#0072ce]/15 flex items-center justify-center mb-8 shadow-[0_0_60px_rgba(0,114,206,0.08)]">
-            <Gamepad2 className="w-12 h-12 text-[#0072ce]" />
-          </div>
-          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-3 tracking-tight">Sun Emulator</h1>
-          <p className="text-white/20 text-sm font-medium tracking-wide">Press any button to start</p>
-
-          <motion.div
-            animate={{ opacity: [0.2, 0.6, 0.2] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="mt-12"
-          >
-            <div className="flex items-center gap-1.5">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="w-1.5 h-1.5 rounded-full bg-[#0072ce]/40" />
-              ))}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
+          <Zap className="w-6 h-6" />
+          Launch Sun Emulator
+        </button>
+      </motion.div>
     </div>
   );
 }

@@ -32,6 +32,18 @@
                 window.EJS_color = "#4f46e5";
                 window.EJS_startOnLoaded = true;
 
+                // Try to catch fetch override errors if any
+                try {
+                    const desc = Object.getOwnPropertyDescriptor(window, 'fetch');
+                    if (desc && !desc.set && desc.configurable) {
+                        Object.defineProperty(window, 'fetch', {
+                            get: desc.get,
+                            set: function() {},
+                            configurable: true
+                        });
+                    }
+                } catch(e) {}
+
                 const script = document.createElement("script");
                 script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
                 document.body.appendChild(script);
@@ -51,6 +63,9 @@
                 }
             }
         });
+        
+        // Notify parent that iframe is ready
+        window.parent.postMessage({ type: 'EMULATOR_READY' }, '*');
     </script>
 </body>
 </html>

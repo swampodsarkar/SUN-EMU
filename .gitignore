@@ -6,7 +6,3 @@ coverage/
 *.log
 .env*
 !.env.example
-stitch_ps5_ui_clone/
-Beige Brown*
-*.crdownload
-stitch_ps5_ui_clone.zip

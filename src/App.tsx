@@ -11,7 +11,7 @@ import ControllerView from "./components/ControllerView";
 export default function App() {
   return (
     <Router>
-      <div className="h-full w-full bg-slate-950 text-white selection:bg-indigo-500/30">
+      <div className="min-h-screen bg-slate-950 text-white selection:bg-indigo-500/30">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/os" element={<OSView />} />
