@@ -25,27 +25,23 @@
         window.addEventListener('message', function(event) {
             const data = event.data;
             if (data && data.type === 'START_EMULATOR') {
+                if (window.EJS_STARTED) return;
+                window.EJS_STARTED = true;
+
+                try {
+                    localStorage.removeItem('EJS_settings');
+                } catch(e) {}
+
                 window.EJS_player = "#game";
                 window.EJS_core = data.core;
                 window.EJS_gameUrl = data.gameUrl;
-                window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+                window.EJS_gameID = 1;
+                window.EJS_pathtodata = "https://raw.githack.com/EmulatorJS/EmulatorJS/main/data/";
                 window.EJS_color = "#4f46e5";
                 window.EJS_startOnLoaded = true;
 
-                // Try to catch fetch override errors if any
-                try {
-                    const desc = Object.getOwnPropertyDescriptor(window, 'fetch');
-                    if (desc && !desc.set && desc.configurable) {
-                        Object.defineProperty(window, 'fetch', {
-                            get: desc.get,
-                            set: function() {},
-                            configurable: true
-                        });
-                    }
-                } catch(e) {}
-
                 const script = document.createElement("script");
-                script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+                script.src = "https://raw.githack.com/EmulatorJS/EmulatorJS/main/data/loader.js";
                 document.body.appendChild(script);
             } else if (data && data.type === 'KEY_EVENT') {
                 const ev = new KeyboardEvent(data.eventType, {

@@ -34,26 +34,17 @@ export default function EmulatorView({
   };
 
   return (
-    <div className={cn(
-      "flex flex-col bg-[#020617] text-slate-100 relative overflow-hidden font-sans",
-      isWindowed ? "h-full w-full" : "min-h-screen"
-    )}>
-      {/* Background glowing effects */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none" />
-
+    <div className="flex flex-col bg-black text-slate-100 relative overflow-hidden font-sans h-full w-full">
       <main className="flex-1 flex flex-col items-center justify-center p-0 z-10 w-full h-full">
-        <div className="w-full h-full flex flex-col min-w-0">
-          <div className="w-full h-full bg-black overflow-hidden relative flex-1">
-            <iframe
-              ref={iframeRef}
-              src="/emulator.html"
-              onLoad={handleIframeLoad}
-              className="w-full h-full border-0"
-              title="Emulator Game"
-              allow="gamepad; autoplay"
-            />
-          </div>
+        <div className="w-full h-full bg-black overflow-hidden relative flex-1">
+          <iframe
+            ref={iframeRef}
+            src="/emulator.html"
+            onLoad={handleIframeLoad}
+            className="w-full h-full border-0"
+            title="Emulator Game"
+            allow="gamepad; autoplay"
+          />
         </div>
       </main>
     </div>
