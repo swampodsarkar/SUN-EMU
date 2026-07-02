@@ -13,6 +13,7 @@ export default function EmulatorView({
   const [showUI, setShowUI] = useState(true);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showQuit, setShowQuit] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const resetTimer = useCallback(() => {
     setShowUI(true);
@@ -20,10 +21,43 @@ export default function EmulatorView({
     timeoutRef.current = setTimeout(() => setShowUI(false), 3000);
   }, []);
 
-  useEffect(() => {
-    resetTimer();
-    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  const enterFullscreen = useCallback(() => {
+    if (containerRef.current && !document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(() => {});
+    }
   }, []);
+
+  const exitFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isPlaying) {
+      resetTimer();
+      enterFullscreen();
+    }
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      exitFullscreen();
+    };
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const onFSChange = () => {
+      if (!document.fullscreenElement && isPlaying) {
+        setShowUI(true);
+      }
+    };
+    document.addEventListener("fullscreenchange", onFSChange);
+    return () => document.removeEventListener("fullscreenchange", onFSChange);
+  }, [isPlaying]);
+
+  const handleBack = () => {
+    exitFullscreen();
+    onBack();
+  };
 
   if (!isPlaying) {
     return (
@@ -36,12 +70,12 @@ export default function EmulatorView({
 
   return (
     <div
+      ref={containerRef}
       className="h-full w-full bg-black relative"
       onMouseMove={resetTimer}
       onMouseLeave={() => setShowUI(true)}
       onTouchStart={resetTimer}
     >
-      {/* Game */}
       <iframe
         key={romKey}
         ref={iframeRef}
@@ -52,7 +86,6 @@ export default function EmulatorView({
         onLoad={sendStartEmulator}
       />
 
-      {/* Top overlay - PS5 style thin bar */}
       <AnimatePresence>
         {showUI && (
           <motion.div
@@ -85,7 +118,6 @@ export default function EmulatorView({
         )}
       </AnimatePresence>
 
-      {/* Bottom - PS button hint */}
       <AnimatePresence>
         {showUI && (
           <motion.div
@@ -108,7 +140,6 @@ export default function EmulatorView({
         )}
       </AnimatePresence>
 
-      {/* Quit confirmation - PS5 style */}
       <AnimatePresence>
         {showQuit && (
           <motion.div
@@ -132,7 +163,7 @@ export default function EmulatorView({
               <p className="text-sm text-white/30 mb-8">Your progress will be lost if you don't have save states.</p>
               <div className="flex flex-col gap-2.5">
                 <button
-                  onClick={onBack}
+                  onClick={handleBack}
                   className="w-full bg-white/10 hover:bg-white/15 text-white font-semibold text-sm py-3.5 rounded-2xl transition-colors"
                 >
                   Close Game
