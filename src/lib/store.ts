@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { db } from './firebase';
+import { ref, onValue, set as setFirebase, remove } from 'firebase/database';
 
 export interface AppSettings {
   darkMode: boolean;
@@ -149,7 +151,8 @@ export const useStore = create<GlobalState>((set, get) => ({
       let user = users.find(u => u.email.trim().toLowerCase() === cleanEmail);
       if (!user) {
         user = { email: cleanEmail, banned: false };
-        set({ users: [...users, user] });
+        const userKey = cleanEmail.replace(/[\.\#\$\[\]]/g, '_');
+        setFirebase(ref(db, `users/${userKey}`), user);
       }
       if (user.banned) {
         alert("You are banned!");
@@ -164,7 +167,8 @@ export const useStore = create<GlobalState>((set, get) => ({
        let user = users.find(u => u.email.trim().toLowerCase() === cleanEmail);
        if (!user) {
          user = { email: cleanEmail, banned: false };
-         set({ users: [...users, user] });
+         const userKey = cleanEmail.replace(/[\.\#\$\[\]]/g, '_');
+         setFirebase(ref(db, `users/${userKey}`), user);
        }
        if (user.banned) {
          alert("You are banned!");
@@ -177,20 +181,41 @@ export const useStore = create<GlobalState>((set, get) => ({
     return false;
   },
   logout: () => set({ currentUser: null }),
-  addGame: (game) => set(state => {
+  addGame: (game) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setFirebase(ref(db, `games/${id}`), game);
     setTimeout(() => get().unlockAchievement('2'), 100);
-    return { games: [...state.games, { ...game, id: Math.random().toString(36).substr(2, 9) }] };
-  }),
-  deleteGame: (id) => set(state => ({ games: state.games.filter(g => g.id !== id) })),
-  toggleBanUser: (email) => set(state => ({
-    users: state.users.map(u => u.email === email ? { ...u, banned: !u.banned } : u)
-  })),
-  addNews: (news) => set(state => ({ news: [...state.news, { ...news, id: Math.random().toString(36).substr(2, 9), date: new Date().toISOString() }] })),
-  deleteNews: (id) => set(state => ({ news: state.news.filter(n => n.id !== id) })),
-  playGame: (id) => set(state => {
+  },
+  deleteGame: (id) => {
+    remove(ref(db, `games/${id}`));
+  },
+  toggleBanUser: (email) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const userKey = cleanEmail.replace(/[\.\#\$\[\]]/g, '_');
+    const users = get().users;
+    const user = users.find(u => u.email.trim().toLowerCase() === cleanEmail);
+    if (user) {
+      setFirebase(ref(db, `users/${userKey}`), {
+        email: cleanEmail,
+        banned: !user.banned
+      });
+    }
+  },
+  addNews: (news) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setFirebase(ref(db, `news/${id}`), {
+      ...news,
+      date: new Date().toISOString()
+    });
+  },
+  deleteNews: (id) => {
+    remove(ref(db, `news/${id}`));
+  },
+  playGame: (id) => {
+    const count = get().gamePlays[id] || 0;
+    setFirebase(ref(db, `gamePlays/${id}`), count + 1);
     setTimeout(() => get().unlockAchievement('3'), 100);
-    return { gamePlays: { ...state.gamePlays, [id]: (state.gamePlays[id] || 0) + 1 } };
-  }),
+  },
   incrementGuestCount: () => set(state => ({ guestCount: state.guestCount + 1 })),
   updateSettings: (newSettings) => set((state) => {
     if (newSettings.theme || newSettings.wallpaper) {
@@ -211,3 +236,90 @@ export const useStore = create<GlobalState>((set, get) => ({
     return { downloadedGameIds: [...state.downloadedGameIds, gameId] };
   })
 }));
+
+// Subscribe/sync listeners with Firebase Realtime Database
+onValue(ref(db, 'games'), (snapshot) => {
+  const data = snapshot.val();
+  if (data) {
+    const gamesList = Object.keys(data).map(key => ({
+      id: key,
+      ...data[key]
+    }));
+    useStore.setState({ games: gamesList });
+  } else {
+    const initialGames = {
+      '1': {
+        name: 'Super Mario 64',
+        size: '8 MB',
+        rawLink: 'https://example.com/sm64.z64',
+        coverImage: 'https://images.unsplash.com/photo-1605901309584-818e25960b8f?q=80&w=2574&auto=format&fit=crop',
+        core: 'n64'
+      },
+      '2': {
+        name: 'The Legend of Zelda: Ocarina of Time',
+        size: '32 MB',
+        rawLink: 'https://example.com/zelda.z64',
+        coverImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2570&auto=format&fit=crop',
+        core: 'n64'
+      },
+      '3': {
+        name: 'Sonic the Hedgehog',
+        size: '4 MB',
+        rawLink: 'https://example.com/sonic.bin',
+        coverImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2570&auto=format&fit=crop',
+        core: 'segaMD'
+      }
+    };
+    setFirebase(ref(db, 'games'), initialGames);
+  }
+});
+
+onValue(ref(db, 'news'), (snapshot) => {
+  const data = snapshot.val();
+  if (data) {
+    const newsList = Object.keys(data).map(key => ({
+      id: key,
+      ...data[key]
+    }));
+    useStore.setState({ news: newsList });
+  } else {
+    const initialNews = {
+      '1': {
+        title: 'Welcome to SUN EMULATOR',
+        content: 'Enjoy playing all your favorite retro games in one place with ultra-fast cloud performance, customized controller linking, and zero-setup requirements.',
+        date: new Date().toISOString()
+      }
+    };
+    setFirebase(ref(db, 'news'), initialNews);
+  }
+});
+
+onValue(ref(db, 'users'), (snapshot) => {
+  const data = snapshot.val();
+  if (data) {
+    const usersList = Object.keys(data).map(key => ({
+      email: data[key].email,
+      banned: !!data[key].banned
+    }));
+    useStore.setState({ users: usersList });
+  } else {
+    const initialUsers = {
+      'admin': {
+        email: 'mdswampodsarkar@gmail.com',
+        banned: false
+      }
+    };
+    setFirebase(ref(db, 'users'), initialUsers);
+  }
+});
+
+onValue(ref(db, 'gamePlays'), (snapshot) => {
+  const data = snapshot.val();
+  if (data) {
+    useStore.setState({ gamePlays: data });
+  } else {
+    const initialGamePlays = { '1': 142, '2': 98, '3': 73 };
+    setFirebase(ref(db, 'gamePlays'), initialGamePlays);
+  }
+});
+
