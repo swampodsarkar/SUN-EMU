@@ -187,7 +187,7 @@ export default function SettingsApp() {
 
   const faqs = [
     { q: 'How do I link a smartphone as a controller?', a: 'Go to Accessories / Controller pairing on the main desktop. Open the unique paired URL on your mobile browser, enter the 4-character session code, and use your smartphone as a fully responsive handheld controller!' },
-    { q: 'Can I upload my own ROM games?', a: 'Absolutely! Use the "Game Library" tile on the main homescreen to load custom ROM files (e.g. .nes, .smc, .z64) straight from your device local directory.' },
+    { q: 'Can I upload my own ROM games?', a: 'To ensure system stability and security, direct local ROM uploading is disabled. Please download your games directly from our secure built-in Store catalog on the home screen!' },
     { q: 'Where are my save files stored?', a: 'Save states are automatically packed and safely synchronized both locally inside your browser cache and remotely inside your linked cloud storage.' }
   ];
 

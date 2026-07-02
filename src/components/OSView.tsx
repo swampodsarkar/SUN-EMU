@@ -87,24 +87,36 @@ export default function OSView() {
     ...(session.gameUrl ? [{
       id: 'active-game',
       title: session.gameName || 'Loaded Game',
-      subtitle: 'PS5 Edition',
-      developer: 'Sony Interactive Entertainment',
+      subtitle: 'Currently Playing',
+      developer: 'Emulator Core',
       bgGradient: 'from-blue-700 via-indigo-900 to-slate-900',
       icon: <Gamepad2 className="w-12 h-12 text-white" />,
       action: () => session.setIsPlaying(true),
       type: 'game' as const,
       progress: 42
     }] : []),
-    {
-      id: 'load-rom',
-      title: 'Game Library',
-      subtitle: 'Install from ROM File',
-      developer: 'System',
-      bgGradient: 'from-emerald-700 via-teal-900 to-slate-900',
-      icon: <Upload className="w-10 h-10 text-white" />,
-      action: () => fileInputRef.current?.click(),
-      type: 'system'
-    },
+    ...store.games
+      .filter(game => store.downloadedGameIds?.includes(game.id))
+      .map(game => ({
+        id: `downloaded-game-${game.id}`,
+        title: game.name,
+        subtitle: `${game.size} • Ready to Play`,
+        developer: `${game.core.toUpperCase()} Core`,
+        bgGradient: 'from-sky-700 via-indigo-950 to-slate-950',
+        icon: game.coverImage ? (
+          <img src={game.coverImage} alt={game.name} className="w-12 h-12 object-cover rounded-xl" />
+        ) : (
+          <Gamepad2 className="w-10 h-10 text-white" />
+        ),
+        action: () => {
+          session.setGameName(game.name);
+          session.setGameUrl(game.rawLink);
+          session.setCore(game.core as any);
+          setTimeout(() => session.setIsPlaying(true), 100);
+        },
+        type: 'game' as const,
+        progress: 0
+      })),
     {
       id: 'store',
       title: 'Store',
@@ -225,7 +237,7 @@ export default function OSView() {
           </button>
           <button onClick={() => {
             if (store.currentUser) {
-               if (store.currentUser.email === 'mdswampodsarkar@gmail.com') {
+               if (store.currentUser.email.trim().toLowerCase() === 'mdswampodsarkar@gmail.com') {
                   setShowAdminPanel(true);
                } else {
                   store.logout();
@@ -472,7 +484,7 @@ export default function OSView() {
             onClose={() => setShowLoginModal(false)} 
             onLoginSuccess={(email) => {
               setShowLoginModal(false);
-              if (email === 'mdswampodsarkar@gmail.com') {
+              if (email.trim().toLowerCase() === 'mdswampodsarkar@gmail.com') {
                 setShowAdminPanel(true);
               }
             }}

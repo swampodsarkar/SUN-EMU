@@ -19,6 +19,7 @@ export default function StoreApp({ onPlayGame }: { onPlayGame: (name: string, ur
       if (progress >= 100) {
         progress = 100;
         clearInterval(interval);
+        store.downloadGame(game.id);
       }
       setDownloading(prev => ({ ...prev, [game.id]: progress }));
     }, 500);
@@ -43,7 +44,7 @@ export default function StoreApp({ onPlayGame }: { onPlayGame: (name: string, ur
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {store.games.map(game => {
           const dlProgress = downloading[game.id];
-          const isDownloaded = dlProgress === 100;
+          const isDownloaded = dlProgress === 100 || store.downloadedGameIds.includes(game.id);
           
           return (
             <motion.div 

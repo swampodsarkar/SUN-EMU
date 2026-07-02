@@ -67,6 +67,8 @@ interface GlobalState {
   updateSettings: (newSettings: Partial<AppSettings>) => void;
   toggleWishlist: (gameId: string) => void;
   unlockAchievement: (id: string) => void;
+  downloadedGameIds: string[];
+  downloadGame: (gameId: string) => void;
 }
 
 export const useStore = create<GlobalState>((set, get) => ({
@@ -109,6 +111,7 @@ export const useStore = create<GlobalState>((set, get) => ({
   guestCount: Math.floor(Math.random() * 50) + 120, // Real-time simulated counts
   gamePlays: { '1': 142, '2': 98, '3': 73 },
   wishlist: ['2'],
+  downloadedGameIds: [],
   achievements: [
     { id: '1', title: 'First Launch', desc: 'Booted up the SUN EMULATOR OS for the first time', unlocked: true, progress: 100 },
     { id: '2', title: 'Power User', desc: 'Add a custom ROM or game link to the store library', unlocked: false, progress: 0 },
@@ -140,11 +143,12 @@ export const useStore = create<GlobalState>((set, get) => ({
     subscriptionTier: 'Ultimate Retro Gamer'
   },
   login: (email, pass) => {
-    if (email === 'mdswampodsarkar@gmail.com' && pass === '123456') {
+    const cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail === 'mdswampodsarkar@gmail.com' && pass === '123456') {
       const users = get().users;
-      let user = users.find(u => u.email === email);
+      let user = users.find(u => u.email.trim().toLowerCase() === cleanEmail);
       if (!user) {
-        user = { email, banned: false };
+        user = { email: cleanEmail, banned: false };
         set({ users: [...users, user] });
       }
       if (user.banned) {
@@ -157,9 +161,9 @@ export const useStore = create<GlobalState>((set, get) => ({
     }
     if (pass === '123456') {
        const users = get().users;
-       let user = users.find(u => u.email === email);
+       let user = users.find(u => u.email.trim().toLowerCase() === cleanEmail);
        if (!user) {
-         user = { email, banned: false };
+         user = { email: cleanEmail, banned: false };
          set({ users: [...users, user] });
        }
        if (user.banned) {
@@ -201,5 +205,9 @@ export const useStore = create<GlobalState>((set, get) => ({
   })),
   unlockAchievement: (id) => set(state => ({
     achievements: state.achievements.map(a => a.id === id ? { ...a, unlocked: true, progress: 100 } : a)
-  }))
+  })),
+  downloadGame: (gameId) => set(state => {
+    if (state.downloadedGameIds.includes(gameId)) return state;
+    return { downloadedGameIds: [...state.downloadedGameIds, gameId] };
+  })
 }));
