@@ -60,8 +60,14 @@ export function useDiscordAuth() {
   };
 
   const login = () => {
-    const redirectUri = encodeURIComponent(window.location.origin);
-    const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=identify`;
+    // We use response_type=token for client-side only auth. 
+    // If you host on Vercel, Discord needs this exact redirect URI registered.
+    const isVercel = window.location.hostname.includes('vercel.app');
+    const redirectUri = isVercel 
+      ? encodeURIComponent('https://sun-emu.vercel.app/os')
+      : encodeURIComponent(window.location.origin + window.location.pathname);
+      
+    const authUrl = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&response_type=token&redirect_uri=${redirectUri}&scope=identify+email`;
     window.location.href = authUrl;
   };
 
