@@ -10,6 +10,13 @@ export default function EmulatorView({
   core
 }: any) {
   
+  React.useEffect(() => {
+    if (isPlaying && iframeRef.current) {
+      // Focus iframe so keyboard events are captured by emulator
+      iframeRef.current.focus();
+    }
+  }, [isPlaying, iframeRef]);
+
   if (!isPlaying) {
     return (
       <div className={cn(

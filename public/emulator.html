@@ -36,12 +36,12 @@
                 window.EJS_core = data.core;
                 window.EJS_gameUrl = data.gameUrl;
                 window.EJS_gameID = 1;
-                window.EJS_pathtodata = "https://raw.githack.com/EmulatorJS/EmulatorJS/main/data/";
+                window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
                 window.EJS_color = "#4f46e5";
                 window.EJS_startOnLoaded = true;
 
                 const script = document.createElement("script");
-                script.src = "https://raw.githack.com/EmulatorJS/EmulatorJS/main/data/loader.js";
+                script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
                 document.body.appendChild(script);
             } else if (data && data.type === 'KEY_EVENT') {
                 const ev = new KeyboardEvent(data.eventType, {
