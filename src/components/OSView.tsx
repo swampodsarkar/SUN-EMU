@@ -1,19 +1,83 @@
-import React, { useState } from 'react';
-import { X, Minus, Square, Gamepad2, PlaySquare, Calculator, FileText, Monitor, LayoutGrid, Search, Volume2, Wifi } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Minus, Square, Gamepad2, PlaySquare, Calculator, FileText, Monitor, LayoutGrid, Search, Volume2, Wifi, Folder, Smartphone, RefreshCw, Settings, Image, FolderPlus, MonitorSmartphone, ChevronRight, User } from 'lucide-react';
 import EmulatorView from './EmulatorView';
+import FileExplorerApp from './FileExplorerApp';
+import ControllerApp from './ControllerApp';
+import ProfileApp from './ProfileApp';
+import { useEmulatorSession } from '../lib/useEmulatorSession';
+import { useDiscordAuth } from '../lib/useDiscordAuth';
 import { motion, AnimatePresence } from 'motion/react';
 
+import { ref, set, get } from 'firebase/database';
+import { db } from '../lib/firebase';
+
 function AdApp() {
+  const { user } = useDiscordAuth();
+  const [isWatching, setIsWatching] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleWatchAd = () => {
+    if (!user) {
+      setMessage("Please login in Cloud Profile to earn coins.");
+      return;
+    }
+
+    setIsWatching(true);
+    setMessage("Watching ad...");
+    
+    // Simulate watching an ad
+    setTimeout(async () => {
+      try {
+        const userRef = ref(db, `users/${user.id}`);
+        const snapshot = await get(userRef);
+        let currentCoins = 0;
+        let userData = { username: user.username, lastUpdated: Date.now() };
+
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          if (data.coins !== undefined) {
+            currentCoins = data.coins;
+          }
+          userData = { ...data, ...userData };
+        }
+
+        await set(userRef, {
+          ...userData,
+          coins: currentCoins + 10,
+        });
+
+        setMessage("You earned 10 Sun Coins!");
+      } catch (error) {
+        console.error("Failed to add coins", error);
+        setMessage("Failed to save coins to cloud.");
+      } finally {
+        setIsWatching(false);
+        setTimeout(() => setMessage(''), 3000);
+      }
+    }, 2000);
+  };
+
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center p-8 bg-slate-900 text-white font-sans">
+    <div className="h-full w-full flex flex-col items-center justify-center p-8 bg-slate-900 text-white font-sans relative">
       <div className="w-24 h-24 bg-amber-500/20 rounded-[2rem] flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(245,158,11,0.2)] border border-amber-500/30">
         <PlaySquare className="w-12 h-12 text-amber-500" />
       </div>
       <h2 className="text-3xl font-display font-bold mb-4">Earn Rewards</h2>
       <p className="text-slate-400 mb-10 max-w-md text-center text-lg leading-relaxed">Watch a short advertisement to earn Sun Coins to unlock premium themes and cloud game saves.</p>
-      <button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-amber-950 font-bold px-10 py-4 rounded-xl transition-all shadow-[0_0_30px_rgba(245,158,11,0.4)] hover:shadow-[0_0_50px_rgba(245,158,11,0.6)] active:scale-95 text-lg">
-        Watch Ad Now
+      
+      <button 
+        onClick={handleWatchAd}
+        disabled={isWatching}
+        className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-amber-950 font-bold px-10 py-4 rounded-xl transition-all shadow-[0_0_30px_rgba(245,158,11,0.4)] hover:shadow-[0_0_50px_rgba(245,158,11,0.6)] active:scale-95 text-lg disabled:opacity-50 disabled:pointer-events-none"
+      >
+        {isWatching ? 'Playing Ad...' : 'Watch Ad Now'}
       </button>
+
+      {message && (
+        <div className="mt-6 px-4 py-2 bg-slate-800 rounded-lg text-amber-400 font-medium">
+          {message}
+        </div>
+      )}
     </div>
   );
 }
@@ -33,14 +97,61 @@ function PlaceholderApp({ name }: { name: string }) {
 }
 
 export default function OSView() {
+  const session = useEmulatorSession();
+
+  const openEmulatorWindow = () => openWindow('emulator');
+
   const [windows, setWindows] = useState([
-    { id: 'emulator', title: 'Sun Emulator', icon: Gamepad2, isOpen: true, isMinimized: false, zIndex: 10, Component: <EmulatorView isWindowed={true} /> },
-    { id: 'ads', title: 'Watch Ad to Earn', icon: PlaySquare, isOpen: false, isMinimized: false, zIndex: 1, Component: <AdApp /> },
-    { id: 'calc', title: 'Calculator', icon: Calculator, isOpen: false, isMinimized: false, zIndex: 2, Component: <PlaceholderApp name="Calculator" /> },
-    { id: 'notepad', title: 'Notepad', icon: FileText, isOpen: false, isMinimized: false, zIndex: 3, Component: <PlaceholderApp name="Notepad" /> },
+    { id: 'files', title: 'File Explorer', icon: Folder, isOpen: false, isMinimized: false, zIndex: 1 },
+    { id: 'controllers', title: 'Devices', icon: Smartphone, isOpen: false, isMinimized: false, zIndex: 2 },
+    { id: 'profile', title: 'Cloud Profile', icon: User, isOpen: false, isMinimized: false, zIndex: 3 },
+    { id: 'emulator', title: 'Sun Emulator', icon: Gamepad2, isOpen: false, isMinimized: false, zIndex: 4 },
+    { id: 'ads', title: 'Watch Ad to Earn', icon: PlaySquare, isOpen: false, isMinimized: false, zIndex: 5 },
+    { id: 'calc', title: 'Calculator', icon: Calculator, isOpen: false, isMinimized: false, zIndex: 6 },
+    { id: 'notepad', title: 'Notepad', icon: FileText, isOpen: false, isMinimized: false, zIndex: 7 },
   ]);
 
-  const [activeWindow, setActiveWindow] = useState('emulator');
+  const renderWindowContent = (id: string) => {
+    switch (id) {
+      case 'files':
+        return <FileExplorerApp {...session} openEmulatorWindow={openEmulatorWindow} />;
+      case 'controllers':
+        return <ControllerApp {...session} />;
+      case 'profile':
+        return <ProfileApp />;
+      case 'emulator':
+        return <EmulatorView isWindowed={true} {...session} />;
+      case 'ads':
+        return <AdApp />;
+      case 'calc':
+        return <PlaceholderApp name="Calculator" />;
+      case 'notepad':
+        return <PlaceholderApp name="Notepad" />;
+      default:
+        return null;
+    }
+  };
+
+  const [activeWindow, setActiveWindow] = useState('');
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (e.target === e.currentTarget || (e.target as HTMLElement).id === 'desktop-area') {
+      setContextMenu({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const closeContextMenu = () => {
+    setContextMenu(null);
+  };
+  
+  const handleRefresh = () => {
+    closeContextMenu();
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 150);
+  };
 
   const openWindow = (id: string) => {
     setWindows(ws => ws.map(w => {
@@ -51,6 +162,13 @@ export default function OSView() {
     }));
     setActiveWindow(id);
   };
+
+  useEffect(() => {
+    // If returning from Discord login (has access_token in hash)
+    if (window.location.hash.includes('access_token')) {
+      openWindow('profile');
+    }
+  }, []);
 
   const closeWindow = (id: string) => {
     setWindows(ws => ws.map(w => w.id === id ? { ...w, isOpen: false } : w));
@@ -71,14 +189,21 @@ export default function OSView() {
   };
 
   return (
-    <div className="h-screen w-full bg-[url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2574&auto=format&fit=crop')] bg-cover bg-center overflow-hidden flex flex-col font-sans relative">
+    <div 
+      className="h-screen w-full bg-[url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2574&auto=format&fit=crop')] bg-cover bg-center overflow-hidden flex flex-col font-sans relative"
+      onClick={closeContextMenu}
+    >
       <div className="absolute inset-0 bg-slate-900/40 mix-blend-multiply pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent pointer-events-none" />
       
       {/* Desktop Area */}
-      <div className="flex-1 relative p-6 z-10">
+      <div 
+        id="desktop-area"
+        className="flex-1 relative p-6 z-10"
+        onContextMenu={handleContextMenu}
+      >
         {/* Desktop Icons */}
-        <div className="flex flex-col gap-6 w-24">
+        <div className={`flex flex-col gap-6 w-24 ${isRefreshing ? 'opacity-0' : 'opacity-100'}`}>
           {windows.map(w => (
             <button 
               key={`icon-${w.id}`}
@@ -120,10 +245,61 @@ export default function OSView() {
               </div>
               {/* Window Content */}
               <div className="flex-1 overflow-auto relative bg-[#020617]">
-                {w.Component}
+                {renderWindowContent(w.id)}
               </div>
             </motion.div>
           ))}
+        </AnimatePresence>
+        
+        {/* Context Menu */}
+        <AnimatePresence>
+          {contextMenu && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.1 }}
+              style={{ left: contextMenu.x, top: contextMenu.y }}
+              className="fixed z-[100] w-64 bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl py-2 flex flex-col text-sm text-slate-200 overflow-hidden font-sans"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button className="flex items-center justify-between w-full px-4 py-2 hover:bg-indigo-500/20 hover:text-indigo-200 transition-colors group">
+                <div className="flex items-center gap-3">
+                  <LayoutGrid className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
+                  <span>View</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+              <button className="flex items-center justify-between w-full px-4 py-2 hover:bg-indigo-500/20 hover:text-indigo-200 transition-colors group">
+                <div className="flex items-center gap-3">
+                  <FolderPlus className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
+                  <span>Sort by</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+              <button 
+                className="flex items-center gap-3 w-full px-4 py-2 hover:bg-indigo-500/20 hover:text-indigo-200 transition-colors group"
+                onClick={handleRefresh}
+              >
+                <RefreshCw className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
+                <span>Refresh</span>
+              </button>
+              <div className="h-px bg-white/10 my-1 w-full" />
+              <button className="flex items-center gap-3 w-full px-4 py-2 hover:bg-indigo-500/20 hover:text-indigo-200 transition-colors group">
+                <FolderPlus className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
+                <span>New</span>
+              </button>
+              <div className="h-px bg-white/10 my-1 w-full" />
+              <button className="flex items-center gap-3 w-full px-4 py-2 hover:bg-indigo-500/20 hover:text-indigo-200 transition-colors group">
+                <MonitorSmartphone className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
+                <span>Display settings</span>
+              </button>
+              <button className="flex items-center gap-3 w-full px-4 py-2 hover:bg-indigo-500/20 hover:text-indigo-200 transition-colors group">
+                <Image className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
+                <span>Personalize</span>
+              </button>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 

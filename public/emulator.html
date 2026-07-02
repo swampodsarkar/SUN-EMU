@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Emulator</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+        }
+        #game {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="game"></div>
+    <script>
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            if (data && data.type === 'START_EMULATOR') {
+                window.EJS_player = "#game";
+                window.EJS_core = data.core;
+                window.EJS_gameUrl = data.gameUrl;
+                window.EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+                window.EJS_color = "#4f46e5";
+                window.EJS_startOnLoaded = true;
+
+                // Try to catch fetch override errors if any
+                try {
+                    const desc = Object.getOwnPropertyDescriptor(window, 'fetch');
+                    if (desc && !desc.set && desc.configurable) {
+                        Object.defineProperty(window, 'fetch', {
+                            get: desc.get,
+                            set: function() {},
+                            configurable: true
+                        });
+                    }
+                } catch(e) {}
+
+                const script = document.createElement("script");
+                script.src = "https://cdn.emulatorjs.org/stable/data/loader.js";
+                document.body.appendChild(script);
+            } else if (data && data.type === 'KEY_EVENT') {
+                const ev = new KeyboardEvent(data.eventType, {
+                    key: data.key,
+                    code: data.code,
+                    keyCode: data.keyCode,
+                    which: data.keyCode,
+                    bubbles: true,
+                    cancelable: true
+                });
+                document.dispatchEvent(ev);
+                const canvas = document.querySelector('#game canvas');
+                if (canvas) {
+                    canvas.dispatchEvent(ev);
+                }
+            }
+        });
+        
+        // Notify parent that iframe is ready
+        window.parent.postMessage({ type: 'EMULATOR_READY' }, '*');
+    </script>
+</body>
+</html>
