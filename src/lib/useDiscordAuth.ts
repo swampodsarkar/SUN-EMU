@@ -1,11 +1,25 @@
 import { useState, useEffect } from 'react';
-
-const DISCORD_CLIENT_ID = '1522128445314957453';
+import { auth } from './firebase';
+import { signInWithCustomToken, signOut } from 'firebase/auth';
 
 export interface DiscordUser {
   id: string;
   username: string;
   avatar: string;
+  email?: string;
+  firebase_token?: string;
+}
+
+// Utility to parse cookies safely
+function getCookie(name: string) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return null;
+}
+
+function clearCookie(name: string) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 }
 
 export function useDiscordAuth() {
@@ -13,67 +27,37 @@ export function useDiscordAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check URL hash for access token (Implicit Grant)
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get('access_token');
-
-    if (accessToken) {
-      // Clear hash to hide the token from the URL
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      localStorage.setItem('discord_token', accessToken);
-      fetchUser(accessToken);
-    } else {
-      const storedToken = localStorage.getItem('discord_token');
-      if (storedToken) {
-        fetchUser(storedToken);
-      } else {
-        setLoading(false);
+    // Check if we have the session cookie from our server
+    const sessionCookieStr = getCookie('discord_session');
+    
+    if (sessionCookieStr) {
+      try {
+        const decodedStr = decodeURIComponent(sessionCookieStr);
+        const sessionData = JSON.parse(decodedStr);
+        setUser(sessionData);
+        
+        // If we received a Firebase custom token, sign in with it!
+        if (sessionData.firebase_token) {
+           signInWithCustomToken(auth, sessionData.firebase_token)
+             .catch((error) => console.error("Firebase auth error:", error));
+        }
+      } catch (e) {
+        console.error("Failed to parse session cookie", e);
       }
     }
+    
+    setLoading(false);
   }, []);
 
-  const fetchUser = async (token: string) => {
-    try {
-      const response = await fetch('https://discord.com/api/users/@me', {
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser({
-          id: userData.id,
-          username: userData.username,
-          avatar: userData.avatar,
-        });
-      } else {
-        // Token might be invalid or expired
-        localStorage.removeItem('discord_token');
-      }
-    } catch (error) {
-      console.error('Failed to fetch Discord user', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const login = () => {
-    // We use response_type=token for client-side only auth. 
-    // If you host on Vercel, Discord needs this exact redirect URI registered.
-    const isVercel = window.location.hostname.includes('vercel.app');
-    const redirectUri = isVercel 
-      ? encodeURIComponent('https://sun-emu.vercel.app/os')
-      : encodeURIComponent(window.location.origin + window.location.pathname);
-      
-    const authUrl = `https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&response_type=token&redirect_uri=${redirectUri}&scope=identify+email`;
-    window.location.href = authUrl;
+    // Redirect to our secure backend route which initiates OAuth
+    window.location.href = '/auth/discord/login';
   };
 
   const logout = () => {
-    localStorage.removeItem('discord_token');
+    clearCookie('discord_session');
     setUser(null);
+    signOut(auth).catch(console.error);
   };
 
   return { user, loading, login, logout };
