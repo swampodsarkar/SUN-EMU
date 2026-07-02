@@ -37,7 +37,8 @@ export default function EmulatorView() {
 
   useEffect(() => {
     // Connect to the socket server
-    const newSocket = io(window.location.origin);
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+    const newSocket = io(backendUrl);
     setSocket(newSocket);
 
     newSocket.on("connect", () => {

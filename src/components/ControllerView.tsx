@@ -42,7 +42,8 @@ export default function ControllerView() {
     if (!codeToJoin) return;
     
     setError(null);
-    const newSocket = io(window.location.origin);
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin;
+    const newSocket = io(backendUrl);
     
     newSocket.on("connect", () => {
       newSocket.emit("controller-join", { pairCode: codeToJoin });
