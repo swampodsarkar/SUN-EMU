@@ -24,7 +24,7 @@ const coreExtensions: Record<string, SupportedCore> = {
   ".zip": "arcade", 
 };
 
-export default function EmulatorView() {
+export default function EmulatorView({ isWindowed }: { isWindowed?: boolean }) {
   const [pairCode, setPairCode] = useState<string>("");
   const [controllers, setControllers] = useState<any[]>([]);
   const [gameUrl, setGameUrl] = useState<string | null>(null);
@@ -188,7 +188,10 @@ export default function EmulatorView() {
   const controllerUrl = `${window.location.origin}/controller/${pairCode}`;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#020617] text-slate-100 relative overflow-hidden font-sans">
+    <div className={cn(
+      "flex flex-col bg-[#020617] text-slate-100 relative overflow-hidden font-sans",
+      isWindowed ? "h-full w-full" : "min-h-screen"
+    )}>
       {/* Background glowing effects */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none" />
@@ -315,22 +318,34 @@ export default function EmulatorView() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-[1400px] flex flex-col items-center"
+            className="w-full h-full flex flex-col lg:flex-row gap-6 items-stretch justify-center max-w-[1600px] mx-auto"
           >
-            <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative">
-              {/* EmulatorJS attaches here */}
-              <div id="game" className="w-full h-full" ref={gameContainerRef}></div>
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative flex-1">
+                {/* EmulatorJS attaches here */}
+                <div id="game" className="w-full h-full" ref={gameContainerRef}></div>
+              </div>
             </div>
             
-            <div className="mt-8 flex flex-wrap gap-6 items-center justify-center bg-slate-900/60 backdrop-blur-md px-8 py-4 rounded-2xl border border-white/10 shadow-xl">
-              <div className="flex items-center gap-3">
-                <Smartphone className="w-5 h-5 text-indigo-400" />
-                <span className="text-sm font-semibold tracking-wide text-slate-300">{controllers.length} Mobile Controllers</span>
+            <div className="w-full lg:w-80 flex flex-col gap-6 shrink-0">
+              <div className="bg-slate-900/60 backdrop-blur-md p-6 rounded-2xl border border-white/10 shadow-xl flex flex-col items-center">
+                <h3 className="font-bold text-white mb-4">Mobile Controller</h3>
+                <div className="bg-white p-3 rounded-xl shadow-inner mb-4 ring-4 ring-white/5">
+                  <QRCodeSVG value={controllerUrl} size={160} level="H" includeMargin={false} fgColor="#0f172a" />
+                </div>
+                <div className="text-sm font-mono bg-slate-950 px-4 py-3 rounded-lg text-indigo-400 w-full text-center border border-white/5 tracking-widest font-bold">
+                  {pairCode}
+                </div>
+                <div className="mt-4 w-full h-px bg-white/10"></div>
+                <div className="mt-4 flex items-center gap-2 text-emerald-400">
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm font-semibold">{controllers.length} Connected</span>
+                </div>
               </div>
-              <div className="w-px h-6 bg-white/10"></div>
+              
               <button 
                 onClick={() => window.location.reload()}
-                className="text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-2 rounded-xl transition-all text-slate-300 hover:text-white"
+                className="font-semibold bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-6 py-4 rounded-xl transition-all text-red-400 hover:text-red-300 w-full shadow-lg"
               >
                 Quit Game
               </button>
