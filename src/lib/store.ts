@@ -6,6 +6,7 @@ interface Game {
   size: string;
   rawLink: string;
   coverImage: string;
+  core: string; // add core field
 }
 
 interface User {
@@ -25,6 +26,8 @@ interface GlobalState {
   users: User[];
   games: Game[];
   news: News[];
+  guestCount: number;
+  gamePlays: Record<string, number>;
   login: (email: string, pass: string) => boolean;
   logout: () => void;
   addGame: (game: Omit<Game, 'id'>) => void;
@@ -32,30 +35,35 @@ interface GlobalState {
   toggleBanUser: (email: string) => void;
   addNews: (news: Omit<News, 'id' | 'date'>) => void;
   deleteNews: (id: string) => void;
+  playGame: (id: string) => void;
+  incrementGuestCount: () => void;
 }
 
 export const useStore = create<GlobalState>((set, get) => ({
   currentUser: null,
-  users: [{ email: 'mdswampodsakrar@gmail.com', banned: false }],
+  users: [{ email: 'mdswampodsarkar@gmail.com', banned: false }],
   games: [
     {
       id: '1',
       name: 'Super Mario 64',
       size: '8 MB',
       rawLink: 'https://example.com/sm64.z64',
-      coverImage: 'https://images.unsplash.com/photo-1605901309584-818e25960b8f?q=80&w=2574&auto=format&fit=crop'
+      coverImage: 'https://images.unsplash.com/photo-1605901309584-818e25960b8f?q=80&w=2574&auto=format&fit=crop',
+      core: 'n64'
     }
   ],
   news: [
     {
       id: '1',
-      title: 'Welcome to PS5 Emulator',
+      title: 'Welcome to SUN EMULATOR',
       content: 'Enjoy playing all your favorite retro games in one place.',
       date: new Date().toISOString()
     }
   ],
+  guestCount: Math.floor(Math.random() * 50) + 10, // Simulated initial guest count
+  gamePlays: { '1': 42 }, // Some mock data
   login: (email, pass) => {
-    if (email === 'mdswampodsakrar@gmail.com' && pass === '123456') {
+    if (email === 'mdswampodsarkar@gmail.com' && pass === '123456') {
       const users = get().users;
       let user = users.find(u => u.email === email);
       if (!user) {
@@ -69,8 +77,8 @@ export const useStore = create<GlobalState>((set, get) => ({
       set({ currentUser: user });
       return true;
     }
-    // Generic user logic can be added here if needed, but for now we only need admin
-    if (pass === '123456') { // default pass for everyone just for demo
+    // Generic user logic
+    if (pass === '123456') { 
        const users = get().users;
        let user = users.find(u => u.email === email);
        if (!user) {
@@ -93,5 +101,7 @@ export const useStore = create<GlobalState>((set, get) => ({
     users: state.users.map(u => u.email === email ? { ...u, banned: !u.banned } : u)
   })),
   addNews: (news) => set(state => ({ news: [...state.news, { ...news, id: Math.random().toString(36).substr(2, 9), date: new Date().toISOString() }] })),
-  deleteNews: (id) => set(state => ({ news: state.news.filter(n => n.id !== id) }))
+  deleteNews: (id) => set(state => ({ news: state.news.filter(n => n.id !== id) })),
+  playGame: (id) => set(state => ({ gamePlays: { ...state.gamePlays, [id]: (state.gamePlays[id] || 0) + 1 } })),
+  incrementGuestCount: () => set(state => ({ guestCount: state.guestCount + 1 }))
 }));

@@ -37,7 +37,7 @@ export default function StoreApp({ onPlayGame }: { onPlayGame: (name: string, ur
 
   return (
     <div className="h-full w-full bg-[#0a0a0a] text-white p-12 overflow-y-auto">
-      <h1 className="text-5xl font-bold mb-2">PlayStation Store</h1>
+      <h1 className="text-5xl font-bold mb-2">Store</h1>
       <p className="text-xl text-white/50 mb-12">Discover and download new retro games</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
@@ -58,6 +58,11 @@ export default function StoreApp({ onPlayGame }: { onPlayGame: (name: string, ur
                   <div className="w-full h-full bg-gradient-to-br from-indigo-900 to-slate-900" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                {game.core && (
+                   <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase border border-white/10 shadow-lg text-white">
+                     {game.core}
+                   </div>
+                )}
               </div>
               
               <div className="p-6 relative">
@@ -71,7 +76,10 @@ export default function StoreApp({ onPlayGame }: { onPlayGame: (name: string, ur
                   </div>
                 ) : isDownloaded ? (
                   <button 
-                    onClick={() => onPlayGame(game.name, game.rawLink, getCoreFromLink(game.rawLink))}
+                    onClick={() => {
+                      store.playGame(game.id);
+                      onPlayGame(game.name, game.rawLink, game.core || getCoreFromLink(game.rawLink));
+                    }}
                     className="w-full bg-white text-black hover:bg-gray-200 py-3 rounded-full font-bold flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:shadow-[0_0_50px_rgba(255,255,255,0.4)]"
                   >
                     <Play className="w-5 h-5 fill-current" /> Play Game

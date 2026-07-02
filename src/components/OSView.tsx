@@ -50,7 +50,7 @@ export default function OSView() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [bootSequence, setBootSequence] = useState(true);
 
-  useEffect(() => {
+  useEffect(() => { store.incrementGuestCount();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     setTimeout(() => setBootSequence(false), 2500);
     return () => clearInterval(timer);
@@ -100,7 +100,7 @@ export default function OSView() {
     },
     {
       id: 'store',
-      title: 'PlayStation Store',
+      title: 'Store',
       subtitle: 'Discover New Games',
       bgGradient: 'from-orange-600 via-red-900 to-slate-900',
       icon: <ShoppingBag className="w-10 h-10 text-white" />,
@@ -168,7 +168,7 @@ export default function OSView() {
             className="text-white font-bold text-3xl tracking-widest flex items-center gap-2"
           >
             <Gamepad2 className="w-8 h-8" />
-            PS5 OS
+            SUN EMULATOR
           </motion.div>
         </motion.div>
       </div>
