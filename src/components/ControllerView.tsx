@@ -101,6 +101,11 @@ export default function ControllerView() {
   const [activeTheme, setActiveTheme] = useState<keyof typeof THEMES>("playstation");
   const [activeTab, setActiveTab] = useState<"gameplay" | "tools" | "settings">("gameplay");
 
+  // Retro & Multi-Core Dynamic Presets
+  const [hostCore, setHostCore] = useState<string | null>(null);
+  const [hostGameName, setHostGameName] = useState<string>("");
+  const [userSelectedPreset, setUserSelectedPreset] = useState<"auto" | "retro" | "classic" | "n64" | "modern">("auto");
+
   const myIdRef = useRef<string>(Math.random().toString(36).substring(2, 9));
   const inputsRef = useRef<Record<string, boolean>>({});
   const turboIntervalsRef = useRef<Record<string, any>>({});
@@ -172,11 +177,30 @@ export default function ControllerView() {
           navigate(`/controller/${codeToJoin}`, { replace: true });
         }
 
-        onValue(ref(db, `sessions/${codeToJoin}/hostAlive`), (snap) => {
+        onValue(ref(db, `sessions/${codeToJoin}`), (snap) => {
           if (!snap.exists()) {
+            setError("Session invalid or expired.");
+            setConnected(false);
+            setPlayerSlot(null);
+            return;
+          }
+          const sessionData = snap.val();
+          if (!sessionData.hostAlive) {
             setError("Host disconnected.");
             setConnected(false);
             setPlayerSlot(null);
+            return;
+          }
+          
+          if (sessionData.core) {
+            setHostCore(sessionData.core);
+          } else {
+            setHostCore(null);
+          }
+          if (sessionData.gameName) {
+            setHostGameName(sessionData.gameName);
+          } else {
+            setHostGameName("");
           }
         });
         
@@ -418,6 +442,42 @@ export default function ControllerView() {
     );
   };
 
+  const PRESET_MAPPINGS = {
+    retro: {
+      name: "Retro Handheld / NES",
+      desc: "Authentic two-button layout for NES, Game Boy, Game Boy Color, and retro 8-bit systems."
+    },
+    classic: {
+      name: "16-Bit Classic (SNES/GBA)",
+      desc: "Complete diamond layout (X, Y, B, A) with shoulder triggers for SNES, GBA, Sega Genesis, and GBC."
+    },
+    n64: {
+      name: "N64 Trident Control",
+      desc: "Custom layouts mapping N64's main joystick, green B / blue A buttons, and yellow C-buttons."
+    },
+    modern: {
+      name: "Pro Pad (PSX/Arcade)",
+      desc: "Dual analog stick setup with L1/R1/L2/R2 shoulder triggers for PlayStation and arcade games."
+    }
+  };
+
+  const getPresetForCore = (core: string | null): "retro" | "classic" | "n64" | "modern" => {
+    if (!core) return "modern";
+    const c = core.toLowerCase();
+    if (["nes", "gb", "gbc", "sms", "atari2600", "atari5200", "atari7800", "coleco", "msx"].includes(c)) {
+      return "retro";
+    }
+    if (["snes", "gba", "segamd", "segagenesis", "gg", "pce", "wswan", "wsc", "ngp", "ngpc", "vb", "lynx"].includes(c)) {
+      return "classic";
+    }
+    if (c === "n64") {
+      return "n64";
+    }
+    return "modern";
+  };
+
+  const activePreset = userSelectedPreset === "auto" ? getPresetForCore(hostCore) : userSelectedPreset;
+
   const selectedTheme = THEMES[activeTheme];
 
   if (!connected) {
@@ -479,7 +539,7 @@ export default function ControllerView() {
               <Gamepad2 className="w-4 h-4 text-white/80" />
             </div>
             <span className="text-xs font-bold tracking-widest text-slate-300 font-mono">
-              PLAYER {playerSlot} • <span className="text-indigo-400 font-bold">{selectedTheme.name}</span>
+              PLAYER {playerSlot} • <span className="text-indigo-400 font-bold uppercase">{PRESET_MAPPINGS[activePreset].name}</span> {hostGameName && <span className="text-white/40 font-normal">({hostGameName})</span>}
             </span>
           </div>
 
@@ -520,174 +580,551 @@ export default function ControllerView() {
           {activeTab === "gameplay" && (
             <div className="flex-1 w-full flex items-center justify-between px-8 py-3 relative">
               
-              {/* Left Side: DPAD + L1/L2 Shoulder Triggers + Left Analog Stick + Turbo Y/X */}
-              <div className="flex items-center gap-6 h-full relative">
-                
-                {/* L1 & L2 Triggers */}
-                <div className="absolute -top-3 left-0 flex gap-2.5 z-10">
-                  <GameButton keyName="q" label="L1" shape="pill" className="w-18 h-10 text-[10px] tracking-widest" />
-                  <GameButton keyName="e" label="L2" shape="pill" className="w-18 h-10 text-[10px] tracking-widest" />
-                </div>
-
-                {/* Left Analog Stick */}
-                <div className="mt-8 flex flex-col items-center">
-                  <AnalogStick type="left" onMove={handleLeftStickMove} onClick={() => triggerHotkey("t")} />
-                  <span className="text-[9px] text-white/30 font-mono tracking-widest uppercase mt-1">Left Analog (L3)</span>
-                </div>
-
-                {/* Classical Cross D-Pad */}
-                <div className="relative w-36 h-36 sm:w-40 sm:h-40 mt-8 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
-                  <div className="absolute inset-0 bg-black/40 rounded-full blur-xl pointer-events-none" />
-                  
-                  {/* Up */}
-                  <button 
-                    onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowUp", "keydown"); }}
-                    onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
-                    onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
-                    className={cn("absolute top-0 left-1/2 -translate-x-1/2 w-11 h-13 sm:w-12 sm:h-15 rounded-t-lg active:scale-95 border-t-2 border-l border-r border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
-                  />
-                  {/* Down */}
-                  <button 
-                    onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowDown", "keydown"); }}
-                    onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
-                    onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
-                    className={cn("absolute bottom-0 left-1/2 -translate-x-1/2 w-11 h-13 sm:w-12 sm:h-15 rounded-b-lg active:scale-95 border-b-2 border-l border-r border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
-                  />
-                  {/* Left */}
-                  <button 
-                    onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keydown"); }}
-                    onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
-                    onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
-                    className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-13 h-11 sm:w-15 sm:h-12 rounded-l-lg active:scale-95 border-l-2 border-t border-b border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
-                  />
-                  {/* Right */}
-                  <button 
-                    onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowRight", "keydown"); }}
-                    onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
-                    onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
-                    className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-13 h-11 sm:w-15 sm:h-12 rounded-r-lg active:scale-95 border-r-2 border-t border-b border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
-                  />
-                  {/* Center Core */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 bg-slate-900 pointer-events-none z-20 rounded shadow-inner border border-white/5" />
-                </div>
-
-                {/* Left side Turbos: Turbo Y and Turbo X */}
-                <div className="flex flex-col gap-3 mt-8">
-                  <div className="flex flex-col items-center">
-                    <button
-                      onPointerDown={() => handleTurboPress("a")}
-                      onPointerUp={() => handleTurboRelease("a")}
-                      onPointerLeave={() => handleTurboRelease("a")}
-                      className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-indigo-500/20 active:scale-95 flex items-center justify-center text-indigo-400 font-extrabold text-xs shadow-md"
-                    >
-                      T_Y
-                    </button>
-                    <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo Y</span>
+              {/* Preset 1: Retro 8-Bit (NES, GB, GBC, Atari, etc.) */}
+              {activePreset === "retro" && (
+                <>
+                  {/* Left Side: DPAD only */}
+                  <div className="flex items-center gap-6 h-full relative">
+                    <div className="relative w-36 h-36 sm:w-40 sm:h-40 mt-8 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
+                      <div className="absolute inset-0 bg-black/40 rounded-full blur-xl pointer-events-none" />
+                      
+                      {/* Up */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowUp", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
+                        className={cn("absolute top-0 left-1/2 -translate-x-1/2 w-11 h-13 sm:w-12 sm:h-15 rounded-t-lg active:scale-95 border-t-2 border-l border-r border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Down */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowDown", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
+                        className={cn("absolute bottom-0 left-1/2 -translate-x-1/2 w-11 h-13 sm:w-12 sm:h-15 rounded-b-lg active:scale-95 border-b-2 border-l border-r border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Left */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
+                        className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-13 h-11 sm:w-15 sm:h-12 rounded-l-lg active:scale-95 border-l-2 border-t border-b border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Right */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowRight", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
+                        className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-13 h-11 sm:w-15 sm:h-12 rounded-r-lg active:scale-95 border-r-2 border-t border-b border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Center Core */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 bg-slate-900 pointer-events-none z-20 rounded shadow-inner border border-white/5" />
+                    </div>
                   </div>
-                  <div className="flex flex-col items-center">
-                    <button
-                      onPointerDown={() => handleTurboPress("s")}
-                      onPointerUp={() => handleTurboRelease("s")}
-                      onPointerLeave={() => handleTurboRelease("s")}
-                      className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-pink-500/20 active:scale-95 flex items-center justify-center text-pink-400 font-extrabold text-xs shadow-md"
-                    >
-                      T_X
-                    </button>
-                    <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo X</span>
-                  </div>
-                </div>
 
-              </div>
+                  {/* Middle Section: Select / Start / Home / Pause */}
+                  <div className="flex flex-col items-center justify-center gap-4 mt-8 px-2">
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Shift" label="SELECT" shape="pill" className="w-16 h-8 text-[9px] tracking-widest" />
+                        <span className="text-[8px] text-white/30 font-mono uppercase mt-1">Select</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Enter" label="START" shape="pill" className="w-16 h-8 text-[9px] tracking-widest" />
+                        <span className="text-[8px] text-white/30 font-mono uppercase mt-1">Start</span>
+                      </div>
+                    </div>
 
-              {/* Middle Section: Select / Start / Home / Pause */}
-              <div className="flex flex-col items-center justify-center gap-4 mt-8 px-2">
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <GameButton keyName="Shift" label="SELECT" shape="pill" className="w-16 h-8 text-[9px] tracking-widest" />
-                    <span className="text-[8px] text-white/30 font-mono uppercase mt-1">Select</span>
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Escape" label={<Home className="w-3.5 h-3.5 text-rose-400" />} shape="round" className="w-10 h-10 border-b-4" />
+                        <span className="text-[8px] text-rose-400/55 font-mono uppercase mt-1 font-bold">Quit</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="p" label={<Pause className="w-3.5 h-3.5 text-indigo-400" />} shape="round" className="w-10 h-10 border-b-4" />
+                        <span className="text-[8px] text-indigo-400/55 font-mono uppercase mt-1 font-bold">Pause</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-center">
-                    <GameButton keyName="Enter" label="START" shape="pill" className="w-16 h-8 text-[9px] tracking-widest" />
-                    <span className="text-[8px] text-white/30 font-mono uppercase mt-1">Start</span>
-                  </div>
-                </div>
 
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <GameButton keyName="Escape" label={<Home className="w-3.5 h-3.5 text-rose-400" />} shape="round" className="w-10 h-10 border-b-4" />
-                    <span className="text-[8px] text-rose-400/55 font-mono uppercase mt-1 font-bold">Quit</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <GameButton keyName="p" label={<Pause className="w-3.5 h-3.5 text-indigo-400" />} shape="round" className="w-10 h-10 border-b-4" />
-                    <span className="text-[8px] text-indigo-400/55 font-mono uppercase mt-1 font-bold">Pause</span>
-                  </div>
-                </div>
-              </div>
+                  {/* Right Side: Retro Turbos + Dual angled A / B action buttons */}
+                  <div className="flex items-center gap-8 h-full relative">
+                    <div className="flex flex-col gap-3 mt-8">
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("z")}
+                          onPointerUp={() => handleTurboRelease("z")}
+                          onPointerLeave={() => handleTurboRelease("z")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-500/20 active:scale-95 flex items-center justify-center text-rose-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_B
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo B</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("x")}
+                          onPointerUp={() => handleTurboRelease("x")}
+                          onPointerLeave={() => handleTurboRelease("x")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-emerald-500/20 active:scale-95 flex items-center justify-center text-emerald-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_A
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo A</span>
+                      </div>
+                    </div>
 
-              {/* Right Side: Turbo B/A + Action buttons (X/Y/A/B) + Right Analog Stick + R1/R2 Shoulder Triggers */}
-              <div className="flex items-center gap-6 h-full relative">
+                    <div className="relative w-36 h-28 flex items-center justify-center gap-6 mt-8">
+                      <div className="flex flex-col items-center translate-y-3">
+                        <GameButton keyName="z" label={selectedTheme.buttonB.label} className={cn("w-15 h-15 border-b-4", selectedTheme.buttonB.btnClass, selectedTheme.buttonB.labelClass)} />
+                        <span className="text-[9px] text-white/40 font-mono mt-1 font-bold">B BUTTON</span>
+                      </div>
+                      <div className="flex flex-col items-center -translate-y-3">
+                        <GameButton keyName="x" label={selectedTheme.buttonA.label} className={cn("w-15 h-15 border-b-4", selectedTheme.buttonA.btnClass, selectedTheme.buttonA.labelClass)} />
+                        <span className="text-[9px] text-white/40 font-mono mt-1 font-bold">A BUTTON</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
-                {/* Right side Turbos: Turbo B and Turbo A */}
-                <div className="flex flex-col gap-3 mt-8">
-                  <div className="flex flex-col items-center">
-                    <button
-                      onPointerDown={() => handleTurboPress("z")}
-                      onPointerUp={() => handleTurboRelease("z")}
-                      onPointerLeave={() => handleTurboRelease("z")}
-                      className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-500/20 active:scale-95 flex items-center justify-center text-rose-400 font-extrabold text-xs shadow-md"
-                    >
-                      T_B
-                    </button>
-                    <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo B</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <button
-                      onPointerDown={() => handleTurboPress("x")}
-                      onPointerUp={() => handleTurboRelease("x")}
-                      onPointerLeave={() => handleTurboRelease("x")}
-                      className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-emerald-500/20 active:scale-95 flex items-center justify-center text-emerald-400 font-extrabold text-xs shadow-md"
-                    >
-                      T_A
-                    </button>
-                    <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo A</span>
-                  </div>
-                </div>
+              {/* Preset 2: 16-Bit Classic (SNES, GBA, Sega, PC Engine, etc.) */}
+              {activePreset === "classic" && (
+                <>
+                  {/* Left Side: DPAD + Left Shoulder Triggers */}
+                  <div className="flex items-center gap-6 h-full relative">
+                    <div className="absolute -top-3 left-0 flex gap-2 z-10">
+                      <GameButton keyName="q" label="L" shape="pill" className="w-16 h-10 text-[10px] tracking-widest" />
+                    </div>
 
-                {/* Action Buttons Pad */}
-                <div className="relative w-36 h-36 sm:w-40 sm:h-40 mt-8 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
-                  <div className="absolute inset-0 bg-black/40 rounded-full blur-xl pointer-events-none" />
-                  
-                  {/* Top: X (mpped to 's') */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2">
-                    <GameButton keyName="s" label={selectedTheme.buttonX.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonX.btnClass, selectedTheme.buttonX.labelClass)} />
-                  </div>
-                  {/* Bottom: B (mapped to 'z') */}
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
-                    <GameButton keyName="z" label={selectedTheme.buttonB.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonB.btnClass, selectedTheme.buttonB.labelClass)} />
-                  </div>
-                  {/* Left: Y (mapped to 'a') */}
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2">
-                    <GameButton keyName="a" label={selectedTheme.buttonY.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonY.btnClass, selectedTheme.buttonY.labelClass)} />
-                  </div>
-                  {/* Right: A (mapped to 'x') */}
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                    <GameButton keyName="x" label={selectedTheme.buttonA.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonA.btnClass, selectedTheme.buttonA.labelClass)} />
-                  </div>
-                </div>
+                    <div className="relative w-36 h-36 sm:w-40 sm:h-40 mt-8 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
+                      <div className="absolute inset-0 bg-black/40 rounded-full blur-xl pointer-events-none" />
+                      
+                      {/* Up */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowUp", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
+                        className={cn("absolute top-0 left-1/2 -translate-x-1/2 w-11 h-13 sm:w-12 sm:h-15 rounded-t-lg active:scale-95 border-t-2 border-l border-r border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Down */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowDown", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
+                        className={cn("absolute bottom-0 left-1/2 -translate-x-1/2 w-11 h-13 sm:w-12 sm:h-15 rounded-b-lg active:scale-95 border-b-2 border-l border-r border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Left */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
+                        className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-13 h-11 sm:w-15 sm:h-12 rounded-l-lg active:scale-95 border-l-2 border-t border-b border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Right */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowRight", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
+                        className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-13 h-11 sm:w-15 sm:h-12 rounded-r-lg active:scale-95 border-r-2 border-t border-b border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Center Core */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 bg-slate-900 pointer-events-none z-20 rounded shadow-inner border border-white/5" />
+                    </div>
 
-                {/* Right Analog Stick */}
-                <div className="mt-8 flex flex-col items-center">
-                  <AnalogStick type="right" onMove={handleRightStickMove} onClick={() => triggerHotkey("y")} />
-                  <span className="text-[9px] text-white/30 font-mono tracking-widest uppercase mt-1">Right Analog (R3)</span>
-                </div>
+                    {/* Classic Turbos Y and X */}
+                    <div className="flex flex-col gap-3 mt-8">
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("a")}
+                          onPointerUp={() => handleTurboRelease("a")}
+                          onPointerLeave={() => handleTurboRelease("a")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-indigo-500/20 active:scale-95 flex items-center justify-center text-indigo-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_Y
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo Y</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("s")}
+                          onPointerUp={() => handleTurboRelease("s")}
+                          onPointerLeave={() => handleTurboRelease("s")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-pink-500/20 active:scale-95 flex items-center justify-center text-pink-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_X
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo X</span>
+                      </div>
+                    </div>
+                  </div>
 
-                {/* R1 & R2 Triggers */}
-                <div className="absolute -top-3 right-0 flex gap-2.5 z-10">
-                  <GameButton keyName="w" label="R1" shape="pill" className="w-18 h-10 text-[10px] tracking-widest" />
-                  <GameButton keyName="r" label="R2" shape="pill" className="w-18 h-10 text-[10px] tracking-widest" />
-                </div>
+                  {/* Middle Section: Select / Start / Home / Pause */}
+                  <div className="flex flex-col items-center justify-center gap-4 mt-8 px-2">
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Shift" label="SELECT" shape="pill" className="w-16 h-8 text-[9px] tracking-widest" />
+                        <span className="text-[8px] text-white/30 font-mono uppercase mt-1">Select</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Enter" label="START" shape="pill" className="w-16 h-8 text-[9px] tracking-widest" />
+                        <span className="text-[8px] text-white/30 font-mono uppercase mt-1">Start</span>
+                      </div>
+                    </div>
 
-              </div>
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Escape" label={<Home className="w-3.5 h-3.5 text-rose-400" />} shape="round" className="w-10 h-10 border-b-4" />
+                        <span className="text-[8px] text-rose-400/55 font-mono uppercase mt-1 font-bold">Quit</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="p" label={<Pause className="w-3.5 h-3.5 text-indigo-400" />} shape="round" className="w-10 h-10 border-b-4" />
+                        <span className="text-[8px] text-indigo-400/55 font-mono uppercase mt-1 font-bold">Pause</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Action Pad + R Shoulder bumper */}
+                  <div className="flex items-center gap-6 h-full relative">
+                    <div className="absolute -top-3 right-0 flex gap-2 z-10">
+                      <GameButton keyName="w" label="R" shape="pill" className="w-16 h-10 text-[10px] tracking-widest" />
+                    </div>
+
+                    {/* Classic Turbos B and A */}
+                    <div className="flex flex-col gap-3 mt-8">
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("z")}
+                          onPointerUp={() => handleTurboRelease("z")}
+                          onPointerLeave={() => handleTurboRelease("z")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-500/20 active:scale-95 flex items-center justify-center text-rose-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_B
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo B</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("x")}
+                          onPointerUp={() => handleTurboRelease("x")}
+                          onPointerLeave={() => handleTurboRelease("x")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-emerald-500/20 active:scale-95 flex items-center justify-center text-emerald-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_A
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo A</span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons Pad (Diamond Layout) */}
+                    <div className="relative w-36 h-36 sm:w-40 sm:h-40 mt-8 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
+                      <div className="absolute inset-0 bg-black/40 rounded-full blur-xl pointer-events-none" />
+                      
+                      {/* Top: X (mapped to 's') */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2">
+                        <GameButton keyName="s" label={selectedTheme.buttonX.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonX.btnClass, selectedTheme.buttonX.labelClass)} />
+                      </div>
+                      {/* Bottom: B (mapped to 'z') */}
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
+                        <GameButton keyName="z" label={selectedTheme.buttonB.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonB.btnClass, selectedTheme.buttonB.labelClass)} />
+                      </div>
+                      {/* Left: Y (mapped to 'a') */}
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                        <GameButton keyName="a" label={selectedTheme.buttonY.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonY.btnClass, selectedTheme.buttonY.labelClass)} />
+                      </div>
+                      {/* Right: A (mapped to 'x') */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                        <GameButton keyName="x" label={selectedTheme.buttonA.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonA.btnClass, selectedTheme.buttonA.labelClass)} />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Preset 3: N64 Layout */}
+              {activePreset === "n64" && (
+                <>
+                  {/* Left Side: Analog Joystick + Compact D-pad + Shoulder L + Z-trigger */}
+                  <div className="flex items-center gap-5 h-full relative">
+                    <div className="absolute -top-3 left-0 flex gap-2 z-10">
+                      <GameButton keyName="w" label="L" shape="pill" className="w-16 h-10 text-[10px] tracking-widest" />
+                      <GameButton keyName="q" label="Z_TRIG" shape="pill" className="w-22 h-10 text-[10px] bg-rose-600 border-rose-950 hover:bg-rose-500 text-white font-extrabold tracking-widest" />
+                    </div>
+
+                    {/* Left Analog (Main N64 joystick) */}
+                    <div className="mt-8 flex flex-col items-center">
+                      <AnalogStick type="left" onMove={handleLeftStickMove} onClick={() => triggerHotkey("t")} />
+                      <span className="text-[9px] text-amber-400 font-mono tracking-widest uppercase mt-1">N64 Joystick</span>
+                    </div>
+
+                    {/* Secondary Compact D-Pad (rarely used) */}
+                    <div className="relative w-28 h-28 mt-8 drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]">
+                      {/* Up */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowUp", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
+                        className={cn("absolute top-0 left-1/2 -translate-x-1/2 w-8 h-10 rounded-t-md border-t border-l border-r border-white/10 touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Down */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowDown", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
+                        className={cn("absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-10 rounded-b-md border-b border-l border-r border-white/10 touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Left */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
+                        className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-10 h-8 rounded-l-md border-l border-t border-b border-white/10 touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Right */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowRight", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
+                        className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-10 h-8 rounded-r-md border-r border-t border-b border-white/10 touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-slate-950 pointer-events-none z-20 rounded" />
+                    </div>
+                  </div>
+
+                  {/* Middle Section: Big Red START Button + Home / Pause */}
+                  <div className="flex flex-col items-center justify-center gap-4 mt-8 px-2">
+                    <div className="flex flex-col items-center">
+                      <GameButton keyName="Enter" label="START" shape="round" className="w-14 h-14 bg-red-600 border-red-950 hover:bg-red-500 text-white font-black text-[10px] tracking-wider" />
+                      <span className="text-[8px] text-red-500 font-mono uppercase mt-1 font-bold">Start</span>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Escape" label={<Home className="w-3.5 h-3.5 text-rose-400" />} shape="round" className="w-9 h-9 border-b-4" />
+                        <span className="text-[7px] text-rose-400/55 font-mono uppercase mt-0.5">Quit</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="p" label={<Pause className="w-3.5 h-3.5 text-indigo-400" />} shape="round" className="w-9 h-9 border-b-4" />
+                        <span className="text-[7px] text-indigo-400/55 font-mono uppercase mt-0.5">Pause</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Side: R bumper + Yellow C-Buttons Diamond + Green B / Blue A */}
+                  <div className="flex items-center gap-6 h-full relative">
+                    <div className="absolute -top-3 right-0 flex gap-2 z-10">
+                      <GameButton keyName="e" label="R" shape="pill" className="w-16 h-10 text-[10px] tracking-widest" />
+                    </div>
+
+                    {/* Classic Green B (mapped to 'z') and Blue A (mapped to 'x') */}
+                    <div className="flex flex-col gap-3 mt-8 translate-y-3">
+                      <div className="flex items-center gap-1.5">
+                        <GameButton keyName="z" label="B" className="w-12 h-12 sm:w-13 sm:h-13 border-b-4 from-emerald-600 to-emerald-700 border-emerald-900 text-white font-mono text-lg font-bold" />
+                        <span className="text-[8px] text-emerald-400 font-mono uppercase">B</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 translate-x-3">
+                        <GameButton keyName="x" label="A" className="w-12 h-12 sm:w-13 sm:h-13 border-b-4 from-blue-600 to-blue-700 border-blue-900 text-white font-mono text-lg font-bold" />
+                        <span className="text-[8px] text-blue-400 font-mono uppercase">A</span>
+                      </div>
+                    </div>
+
+                    {/* N64 C-Buttons (Yellow Circle Diamond) */}
+                    <div className="relative w-36 h-36 sm:w-40 sm:h-40 mt-8 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
+                      <div className="absolute inset-0 bg-yellow-400/10 rounded-full blur-xl pointer-events-none" />
+                      
+                      {/* C-Up -> 'i' */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2">
+                        <GameButton keyName="i" label="C▲" className="w-12 h-12 border-b-4 from-amber-400 to-yellow-500 border-yellow-800 text-black font-sans text-xs font-black" />
+                      </div>
+                      {/* C-Down -> 'k' */}
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
+                        <GameButton keyName="k" label="C▼" className="w-12 h-12 border-b-4 from-amber-400 to-yellow-500 border-yellow-800 text-black font-sans text-xs font-black" />
+                      </div>
+                      {/* C-Left -> 'j' */}
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                        <GameButton keyName="j" label="C◀" className="w-12 h-12 border-b-4 from-amber-400 to-yellow-500 border-yellow-800 text-black font-sans text-xs font-black" />
+                      </div>
+                      {/* C-Right -> 'l' */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                        <GameButton keyName="l" label="C▶" className="w-12 h-12 border-b-4 from-amber-400 to-yellow-500 border-yellow-800 text-black font-sans text-xs font-black" />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Preset 4: Modern Layout (PlayStation, NDS, Arcade, Sega MD - All buttons layout) */}
+              {activePreset === "modern" && (
+                <>
+                  {/* Left Side: DPAD + L1/L2 Shoulder Triggers + Left Analog Stick + Turbo Y/X */}
+                  <div className="flex items-center gap-6 h-full relative">
+                    
+                    {/* L1 & L2 Triggers */}
+                    <div className="absolute -top-3 left-0 flex gap-2.5 z-10">
+                      <GameButton keyName="q" label="L1" shape="pill" className="w-18 h-10 text-[10px] tracking-widest" />
+                      <GameButton keyName="e" label="L2" shape="pill" className="w-18 h-10 text-[10px] tracking-widest" />
+                    </div>
+
+                    {/* Left Analog Stick */}
+                    <div className="mt-8 flex flex-col items-center">
+                      <AnalogStick type="left" onMove={handleLeftStickMove} onClick={() => triggerHotkey("t")} />
+                      <span className="text-[9px] text-white/30 font-mono tracking-widest uppercase mt-1">Left Analog (L3)</span>
+                    </div>
+
+                    {/* Classical Cross D-Pad */}
+                    <div className="relative w-36 h-36 sm:w-40 sm:h-40 mt-8 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
+                      <div className="absolute inset-0 bg-black/40 rounded-full blur-xl pointer-events-none" />
+                      
+                      {/* Up */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowUp", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowUp", "keyup"); }}
+                        className={cn("absolute top-0 left-1/2 -translate-x-1/2 w-11 h-13 sm:w-12 sm:h-15 rounded-t-lg active:scale-95 border-t-2 border-l border-r border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Down */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowDown", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowDown", "keyup"); }}
+                        className={cn("absolute bottom-0 left-1/2 -translate-x-1/2 w-11 h-13 sm:w-12 sm:h-15 rounded-b-lg active:scale-95 border-b-2 border-l border-r border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Left */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowLeft", "keyup"); }}
+                        className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-13 h-11 sm:w-15 sm:h-12 rounded-l-lg active:scale-95 border-l-2 border-t border-b border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Right */}
+                      <button 
+                        onPointerDown={(e) => { e.preventDefault(); emitKey("ArrowRight", "keydown"); }}
+                        onPointerUp={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
+                        onPointerLeave={(e) => { e.preventDefault(); emitKey("ArrowRight", "keyup"); }}
+                        className={cn("absolute right-0 top-1/2 -translate-y-1/2 w-13 h-11 sm:w-15 sm:h-12 rounded-r-lg active:scale-95 border-r-2 border-t border-b border-white/10 shadow-md touch-manipulation z-10", selectedTheme.dpad)}
+                      />
+                      {/* Center Core */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 bg-slate-900 pointer-events-none z-20 rounded shadow-inner border border-white/5" />
+                    </div>
+
+                    {/* Left side Turbos: Turbo Y and Turbo X */}
+                    <div className="flex flex-col gap-3 mt-8">
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("a")}
+                          onPointerUp={() => handleTurboRelease("a")}
+                          onPointerLeave={() => handleTurboRelease("a")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-indigo-500/20 active:scale-95 flex items-center justify-center text-indigo-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_Y
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo Y</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("s")}
+                          onPointerUp={() => handleTurboRelease("s")}
+                          onPointerLeave={() => handleTurboRelease("s")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-pink-500/20 active:scale-95 flex items-center justify-center text-pink-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_X
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo X</span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Middle Section: Select / Start / Home / Pause */}
+                  <div className="flex flex-col items-center justify-center gap-4 mt-8 px-2">
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Shift" label="SELECT" shape="pill" className="w-16 h-8 text-[9px] tracking-widest" />
+                        <span className="text-[8px] text-white/30 font-mono uppercase mt-1">Select</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Enter" label="START" shape="pill" className="w-16 h-8 text-[9px] tracking-widest" />
+                        <span className="text-[8px] text-white/30 font-mono uppercase mt-1">Start</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="Escape" label={<Home className="w-3.5 h-3.5 text-rose-400" />} shape="round" className="w-10 h-10 border-b-4" />
+                        <span className="text-[8px] text-rose-400/55 font-mono uppercase mt-1 font-bold">Quit</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <GameButton keyName="p" label={<Pause className="w-3.5 h-3.5 text-indigo-400" />} shape="round" className="w-10 h-10 border-b-4" />
+                        <span className="text-[8px] text-indigo-400/55 font-mono uppercase mt-1 font-bold">Pause</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Turbo B/A + Action buttons (X/Y/A/B) + Right Analog Stick + R1/R2 Shoulder Triggers */}
+                  <div className="flex items-center gap-6 h-full relative">
+
+                    {/* Right side Turbos: Turbo B and Turbo A */}
+                    <div className="flex flex-col gap-3 mt-8">
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("z")}
+                          onPointerUp={() => handleTurboRelease("z")}
+                          onPointerLeave={() => handleTurboRelease("z")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-500/20 active:scale-95 flex items-center justify-center text-rose-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_B
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo B</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <button
+                          onPointerDown={() => handleTurboPress("x")}
+                          onPointerUp={() => handleTurboRelease("x")}
+                          onPointerLeave={() => handleTurboRelease("x")}
+                          className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-emerald-500/20 active:scale-95 flex items-center justify-center text-emerald-400 font-extrabold text-xs shadow-md"
+                        >
+                          T_A
+                        </button>
+                        <span className="text-[8px] text-white/30 font-bold uppercase mt-1">Turbo A</span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons Pad */}
+                    <div className="relative w-36 h-36 sm:w-40 sm:h-40 mt-8 drop-shadow-[0_8px_20px_rgba(0,0,0,0.6)]">
+                      <div className="absolute inset-0 bg-black/40 rounded-full blur-xl pointer-events-none" />
+                      
+                      {/* Top: X (mapped to 's') */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2">
+                        <GameButton keyName="s" label={selectedTheme.buttonX.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonX.btnClass, selectedTheme.buttonX.labelClass)} />
+                      </div>
+                      {/* Bottom: B (mapped to 'z') */}
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
+                        <GameButton keyName="z" label={selectedTheme.buttonB.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonB.btnClass, selectedTheme.buttonB.labelClass)} />
+                      </div>
+                      {/* Left: Y (mapped to 'a') */}
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2">
+                        <GameButton keyName="a" label={selectedTheme.buttonY.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonY.btnClass, selectedTheme.buttonY.labelClass)} />
+                      </div>
+                      {/* Right: A (mapped to 'x') */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                        <GameButton keyName="x" label={selectedTheme.buttonA.label} className={cn("w-13 h-13 sm:w-14 sm:h-14 border-b-4", selectedTheme.buttonA.btnClass, selectedTheme.buttonA.labelClass)} />
+                      </div>
+                    </div>
+
+                    {/* Right Analog Stick */}
+                    <div className="mt-8 flex flex-col items-center">
+                      <AnalogStick type="right" onMove={handleRightStickMove} onClick={() => triggerHotkey("y")} />
+                      <span className="text-[9px] text-white/30 font-mono tracking-widest uppercase mt-1">Right Analog (R3)</span>
+                    </div>
+
+                    {/* R1 & R2 Triggers */}
+                    <div className="absolute -top-3 right-0 flex gap-2.5 z-10">
+                      <GameButton keyName="w" label="R1" shape="pill" className="w-18 h-10 text-[10px] tracking-widest" />
+                      <GameButton keyName="r" label="R2" shape="pill" className="w-18 h-10 text-[10px] tracking-widest" />
+                    </div>
+
+                  </div>
+                </>
+              )}
 
             </div>
           )}
@@ -880,8 +1317,59 @@ export default function ControllerView() {
 
           {/* Tab 3: Advanced Controller Settings */}
           {activeTab === "settings" && (
-            <div className="flex-1 w-full max-w-4xl mx-auto px-10 py-6 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-y-auto max-h-[75vh]">
+            <div className="flex-1 w-full max-w-4xl mx-auto px-10 py-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[75vh]">
               
+              {/* Controller Mapping Preset Settings */}
+              <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-5 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-bold text-sm tracking-wide text-amber-400 flex items-center gap-2 mb-4">
+                    <Gamepad2 className="w-4 h-4" />
+                    Console Mapping Presets
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <button
+                      onClick={() => {
+                        setUserSelectedPreset("auto");
+                        if (vibrationEnabled && navigator.vibrate) navigator.vibrate(20);
+                      }}
+                      className={cn(
+                        "p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer relative overflow-hidden active:scale-95",
+                        userSelectedPreset === "auto" 
+                          ? "bg-amber-500/20 border-amber-500 shadow-md shadow-amber-500/10" 
+                          : "bg-black/40 border-white/5 hover:border-white/10"
+                      )}
+                    >
+                      <span className="font-bold text-[11px] text-white">Auto Sync</span>
+                      <span className="text-[9px] text-amber-400 mt-1 font-mono font-bold">Auto Core Map</span>
+                    </button>
+                    {Object.entries(PRESET_MAPPINGS).map(([id, p]) => (
+                      <button
+                        key={id}
+                        onClick={() => {
+                          setUserSelectedPreset(id as any);
+                          if (vibrationEnabled && navigator.vibrate) navigator.vibrate(20);
+                        }}
+                        className={cn(
+                          "p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer relative overflow-hidden active:scale-95",
+                          userSelectedPreset === id 
+                            ? "bg-indigo-600/20 border-indigo-500 shadow-md shadow-indigo-500/10" 
+                            : "bg-black/40 border-white/5 hover:border-white/10"
+                        )}
+                      >
+                        <span className="font-bold text-[11px] text-white line-clamp-1">{p.name}</span>
+                        <span className="text-[9px] text-slate-400 mt-1 line-clamp-1 text-xs">{p.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-black/30 border border-white/5 p-3 rounded-xl mt-4">
+                  <span className="text-[10px] text-slate-400 leading-normal block">
+                    Force any controller preset (Retro/Classic/N64/Modern) independently of the running game core.
+                  </span>
+                </div>
+              </div>
+
               {/* Theme Settings Selection */}
               <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-5 flex flex-col justify-between">
                 <div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ref, set, onChildAdded, onChildRemoved, onChildChanged, onDisconnect, remove } from "firebase/database";
+import { ref, set, onChildAdded, onChildRemoved, onChildChanged, onDisconnect, remove, update } from "firebase/database";
 import { db } from "./firebase";
 import type { SupportedCore } from "../types";
 
@@ -142,6 +142,18 @@ export function useEmulatorSession() {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [isPlaying, gameUrl, core]);
+
+  useEffect(() => {
+    if (!pairCode) return;
+    const sessionRef = ref(db, `sessions/${pairCode}`);
+    update(sessionRef, {
+      core: core || null,
+      gameName: gameName || "",
+      isPlaying: isPlaying
+    }).catch(err => {
+      console.error("Failed to sync emulator state with Firebase:", err);
+    });
+  }, [pairCode, core, gameName, isPlaying]);
 
   return {
     pairCode,
