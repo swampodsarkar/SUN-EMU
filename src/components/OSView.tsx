@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Search, User, Play, Plus, Smartphone, X, Upload, Bell, Users, Trophy, Download, ShoppingBag, Power, Gamepad2, ChevronRight, Menu, RefreshCw, LogOut } from 'lucide-react';
+import { Settings, Search, User, Play, Plus, Smartphone, X, Upload, Bell, Users, Trophy, Download, ShoppingBag, Power, Gamepad2, ChevronRight, Menu, RefreshCw, LogOut, Copy, Check, ExternalLink, Keyboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useEmulatorSession } from '../lib/useEmulatorSession';
@@ -94,9 +94,145 @@ export default function OSView() {
     };
   }, [session.isPlaying]);
 
+  const [showMultiplayerHub, setShowMultiplayerHub] = useState(false);
+  const [simulatedSlots, setSimulatedSlots] = useState<number[]>([]);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const simulatedInputsRef = useRef<Record<number, Record<string, boolean>>>({
+    2: {},
+    3: {},
+    4: {}
+  });
+
+  const LOCAL_MAPPINGS: Record<number, Record<string, string>> = {
+    2: {
+      "KeyW": "ArrowUp",
+      "KeyS": "ArrowDown",
+      "KeyA": "ArrowLeft",
+      "KeyD": "ArrowRight",
+      "KeyT": "Shift", // Select
+      "KeyY": "Enter", // Start
+      "KeyF": "z",     // B
+      "KeyG": "x",     // A
+      "KeyR": "a",     // Y
+      "KeyV": "s",     // X
+      "KeyQ": "q",     // L1
+      "KeyE": "w"      // R1
+    },
+    3: {
+      "KeyI": "ArrowUp",
+      "KeyK": "ArrowDown",
+      "KeyJ": "ArrowLeft",
+      "KeyL": "ArrowRight",
+      "KeyO": "Shift", // Select
+      "KeyP": "Enter", // Start
+      "Comma": "z",    // B
+      "Period": "x",   // A
+      "Semicolon": "a",// Y
+      "Quote": "s",    // X
+      "KeyU": "q",     // L1
+      "KeyH": "w"      // R1
+    },
+    4: {
+      "Numpad8": "ArrowUp",
+      "Numpad2": "ArrowDown",
+      "Numpad4": "ArrowLeft",
+      "Numpad6": "ArrowRight",
+      "NumpadDivide": "Shift",
+      "NumpadMultiply": "Enter",
+      "Numpad1": "z",
+      "Numpad3": "x",
+      "Numpad7": "a",
+      "Numpad9": "s",
+      "NumpadSubtract": "q",
+      "NumpadAdd": "w"
+    }
+  };
+
+  useEffect(() => {
+    if (!session.isPlaying) return;
+
+    const handleLocalKeyDown = (e: KeyboardEvent) => {
+      // Avoid capturing inside inputs
+      if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") {
+        return;
+      }
+      [2, 3, 4].forEach(slot => {
+        if (simulatedSlots.includes(slot)) {
+          const mapping = LOCAL_MAPPINGS[slot];
+          if (mapping && mapping[e.code]) {
+            e.preventDefault();
+            const emulatorKey = mapping[e.code];
+            if (!simulatedInputsRef.current[slot]) {
+              simulatedInputsRef.current[slot] = {};
+            }
+            simulatedInputsRef.current[slot][emulatorKey] = true;
+
+            if (session.iframeRef.current && session.iframeRef.current.contentWindow) {
+              session.iframeRef.current.contentWindow.postMessage({
+                type: 'CONTROLLER_INPUT',
+                playerSlot: slot,
+                inputs: { ...simulatedInputsRef.current[slot] }
+              }, '*');
+            }
+          }
+        }
+      });
+    };
+
+    const handleLocalKeyUp = (e: KeyboardEvent) => {
+      [2, 3, 4].forEach(slot => {
+        if (simulatedSlots.includes(slot)) {
+          const mapping = LOCAL_MAPPINGS[slot];
+          if (mapping && mapping[e.code]) {
+            const emulatorKey = mapping[e.code];
+            if (simulatedInputsRef.current[slot]) {
+              simulatedInputsRef.current[slot][emulatorKey] = false;
+            }
+
+            if (session.iframeRef.current && session.iframeRef.current.contentWindow) {
+              session.iframeRef.current.contentWindow.postMessage({
+                type: 'CONTROLLER_INPUT',
+                playerSlot: slot,
+                inputs: { ...simulatedInputsRef.current[slot] }
+              }, '*');
+            }
+          }
+        }
+      });
+    };
+
+    window.addEventListener('keydown', handleLocalKeyDown, true);
+    window.addEventListener('keyup', handleLocalKeyUp, true);
+
+    let iframeWin: Window | null = null;
+    try {
+      if (session.iframeRef.current && session.iframeRef.current.contentWindow) {
+        iframeWin = session.iframeRef.current.contentWindow;
+        iframeWin.addEventListener('keydown', handleLocalKeyDown, true);
+        iframeWin.addEventListener('keyup', handleLocalKeyUp, true);
+      }
+    } catch (err) {
+      console.warn("Could not attach key listeners to iframe directly:", err);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleLocalKeyDown, true);
+      window.removeEventListener('keyup', handleLocalKeyUp, true);
+      if (iframeWin) {
+        try {
+          iframeWin.removeEventListener('keydown', handleLocalKeyDown, true);
+          iframeWin.removeEventListener('keyup', handleLocalKeyUp, true);
+        } catch (e) {}
+      }
+    };
+  }, [session.isPlaying, simulatedSlots]);
+
   useEffect(() => {
     if (!session.isPlaying) {
       setShowPauseMenu(false);
+      setShowMultiplayerHub(false);
+      setSimulatedSlots([]);
     }
   }, [session.isPlaying]);
 
@@ -1021,12 +1157,296 @@ export default function OSView() {
               />
             </div>
 
-            {/* Subtle floating hint in top-right corner to prompt for Esc key */}
-            <div className="absolute top-4 right-4 z-20 pointer-events-none opacity-30 hover:opacity-100 transition-opacity">
-              <span className="bg-black/55 backdrop-blur-md text-white/50 px-3.5 py-1.5 rounded-full text-[10px] font-bold border border-white/5 tracking-wider select-none uppercase font-mono">
-                Press ESC to Pause & Exit
-              </span>
+            {/* Top Interactive Control Bar */}
+            <div className="absolute top-4 left-4 right-4 z-30 flex justify-between items-center select-none pointer-events-auto">
+              {/* Multiplayer Hub Trigger */}
+              <button
+                onClick={() => {
+                  setShowMultiplayerHub(prev => !prev);
+                  // Focus iframe so it doesn't get stuck if we click away
+                  if (showMultiplayerHub && session.iframeRef.current) {
+                    session.iframeRef.current.focus();
+                  }
+                }}
+                className={cn(
+                  "bg-black/80 hover:bg-black/95 backdrop-blur-md px-4.5 py-2.5 rounded-full text-xs font-bold border flex items-center gap-2.5 transition-all cursor-pointer shadow-2xl hover:scale-105 active:scale-95",
+                  showMultiplayerHub 
+                    ? "border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.35)]" 
+                    : "border-white/10 text-white/90"
+                )}
+              >
+                <Users className="w-4 h-4 text-emerald-400" />
+                <span>👥 Multiplayer Setup ({1 + session.controllers.length + simulatedSlots.length}/4)</span>
+                {session.controllers.length + simulatedSlots.length > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                )}
+              </button>
+
+              {/* Pause & Escape Hints */}
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:inline bg-black/60 backdrop-blur-md text-white/40 px-3 py-2 rounded-full text-[10px] font-mono tracking-wider border border-white/5 uppercase">
+                  ESC to Pause & Quit
+                </span>
+                <button
+                  onClick={() => setShowPauseMenu(true)}
+                  className="bg-black/80 hover:bg-black/95 text-red-400 hover:text-red-300 backdrop-blur-md px-4.5 py-2.5 rounded-full text-xs font-bold border border-white/10 flex items-center gap-2 transition-all cursor-pointer shadow-2xl hover:scale-105 active:scale-95"
+                >
+                  <Power className="w-3.5 h-3.5 text-red-500" />
+                  <span>Quit Game</span>
+                </button>
+              </div>
             </div>
+
+            {/* Multiplayer Hub Overlay Screen */}
+            <AnimatePresence>
+              {showMultiplayerHub && (
+                <motion.div
+                  initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                  animate={{ opacity: 1, backdropFilter: 'blur(16px)' }}
+                  exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                  transition={{ duration: 0.25 }}
+                  className="absolute inset-0 z-20 bg-slate-950/80 flex items-center justify-center p-4 md:p-8"
+                  onClick={() => setShowMultiplayerHub(false)}
+                >
+                  {/* Glassmorphic Panel content container */}
+                  <motion.div
+                    initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                    animate={{ scale: 1, y: 0, opacity: 1 }}
+                    exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="w-full max-w-4xl bg-slate-950/95 border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-[0_25px_70px_rgba(0,0,0,0.95)] text-white relative overflow-y-auto max-h-[90vh] md:max-h-[85vh] backdrop-blur-3xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Abstract colorful gradients in background */}
+                    <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                    {/* Close button inside the card */}
+                    <button
+                      onClick={() => setShowMultiplayerHub(false)}
+                      className="absolute top-6 right-6 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white p-3 rounded-full border border-white/5 transition-all active:scale-90"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    {/* Header */}
+                    <div className="mb-8">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-extrabold tracking-widest uppercase mb-4 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                        <Users className="w-3.5 h-3.5" />
+                        MULTIPLAYER CENTRAL & LOCAL PLAY
+                      </div>
+                      <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                        Connect up to 4 Players
+                      </h2>
+                      <p className="text-sm text-slate-400 mt-1 max-w-xl">
+                        Scan with your phone to use it as a gamepad, launch multiple local controller tabs, or enable local keyboard mapping to play together instantly on one screen!
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                      {/* Left: Players Slots Configurator (8 cols) */}
+                      <div className="lg:col-span-7 space-y-4">
+                        <h3 className="text-xs uppercase font-bold tracking-widest text-slate-500 mb-2">PLAYER SLOTS</h3>
+                        {[1, 2, 3, 4].map((slot) => {
+                          // Find active controller for this slot from Firebase
+                          const remoteCtrl = session.controllers.find((c: any) => c.playerSlot === slot);
+                          const isSimulated = simulatedSlots.includes(slot);
+                          
+                          let slotStatus = "Empty Slot";
+                          let bgClass = "bg-white/5 border-white/5";
+                          let tagColor = "bg-slate-800 text-slate-400";
+                          
+                          if (slot === 1) {
+                            slotStatus = "Active (Host Keyboard)";
+                            bgClass = "bg-indigo-500/5 border-indigo-500/20";
+                            tagColor = "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30";
+                          } else if (remoteCtrl) {
+                            slotStatus = "📱 Phone Connected";
+                            bgClass = "bg-emerald-500/5 border-emerald-500/20";
+                            tagColor = "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+                          } else if (isSimulated) {
+                            slotStatus = "⌨️ Local Keyboard Active";
+                            bgClass = "bg-amber-500/5 border-amber-500/20";
+                            tagColor = "bg-amber-500/20 text-amber-300 border border-amber-500/30";
+                          }
+
+                          return (
+                            <div key={slot} className={cn("border rounded-2xl p-4.5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all", bgClass)}>
+                              {/* Player Info */}
+                              <div className="flex items-center gap-3.5">
+                                <div className={cn("px-3.5 py-1 rounded-xl text-xs font-black", tagColor)}>
+                                  P{slot}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-sm text-slate-200">
+                                    {slot === 1 ? "Player 1 (Host)" : `Player ${slot}`}
+                                  </span>
+                                  <span className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
+                                    {slotStatus}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Action controls */}
+                              <div className="flex items-center gap-2">
+                                {slot === 1 ? (
+                                  <span className="text-[10px] text-slate-500 font-mono">Default bindings enabled</span>
+                                ) : remoteCtrl ? (
+                                  <button
+                                    onClick={() => {
+                                      // Disconnect mobile controller physically
+                                      // (They can just close their browser, but we let users force-clear it)
+                                    }}
+                                    className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/25 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                                  >
+                                    Kick Slot
+                                  </button>
+                                ) : isSimulated ? (
+                                  <button
+                                    onClick={() => {
+                                      setSimulatedSlots(prev => prev.filter(s => s !== slot));
+                                      // Clean simulated inputs
+                                      simulatedInputsRef.current[slot] = {};
+                                      if (session.iframeRef.current && session.iframeRef.current.contentWindow) {
+                                        session.iframeRef.current.contentWindow.postMessage({
+                                          type: 'CONTROLLER_INPUT',
+                                          playerSlot: slot,
+                                          inputs: null
+                                        }, '*');
+                                      }
+                                    }}
+                                    className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                  >
+                                    Disable Keyboard Map
+                                  </button>
+                                ) : (
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setSimulatedSlots(prev => [...prev, slot]);
+                                      }}
+                                      className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                                    >
+                                      <Keyboard className="w-3.5 h-3.5 text-slate-400" />
+                                      Use Keyboard
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const url = `/controller/${session.pairCode}`;
+                                        window.open(url, '_blank');
+                                      }}
+                                      className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                                      Launch Tab
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Keyboard bindings cheat sheet */}
+                        {simulatedSlots.length > 0 && (
+                          <div className="bg-white/5 border border-white/5 p-5 rounded-2xl space-y-3">
+                            <h4 className="text-xs font-extrabold text-slate-300 flex items-center gap-1.5">
+                              <Keyboard className="w-4 h-4 text-amber-400" />
+                              LOCAL MULTIPLAYER KEYBOARD SCHEME
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                              {simulatedSlots.includes(2) && (
+                                <div className="space-y-1 bg-white/5 p-3 rounded-xl">
+                                  <span className="font-extrabold text-emerald-400">Player 2 Keys:</span>
+                                  <ul className="text-slate-400 space-y-0.5 font-mono text-[10px]">
+                                    <li>• Movement: <span className="text-white">W, A, S, D</span></li>
+                                    <li>• Face Buttons (B/A/Y/X): <span className="text-white">F, G, R, V</span></li>
+                                    <li>• Triggers (L1/R1): <span className="text-white">Q, E</span></li>
+                                    <li>• Start / Select: <span className="text-white">Y / T</span></li>
+                                  </ul>
+                                </div>
+                              )}
+                              {simulatedSlots.includes(3) && (
+                                <div className="space-y-1 bg-white/5 p-3 rounded-xl">
+                                  <span className="font-extrabold text-rose-400">Player 3 Keys:</span>
+                                  <ul className="text-slate-400 space-y-0.5 font-mono text-[10px]">
+                                    <li>• Movement: <span className="text-white">I, J, K, L</span></li>
+                                    <li>• Face Buttons (B/A/Y/X): <span className="text-white">Comma(,), Period(.), Semicolon(;), Quote(')</span></li>
+                                    <li>• Triggers (L1/R1): <span className="text-white">U, H</span></li>
+                                    <li>• Start / Select: <span className="text-white">P / O</span></li>
+                                  </ul>
+                                </div>
+                              )}
+                              {simulatedSlots.includes(4) && (
+                                <div className="space-y-1 bg-white/5 p-3 rounded-xl">
+                                  <span className="font-extrabold text-amber-400">Player 4 Keys:</span>
+                                  <ul className="text-slate-400 space-y-0.5 font-mono text-[10px]">
+                                    <li>• Movement: <span className="text-white">Num 8, 4, 2, 6</span></li>
+                                    <li>• Face Buttons (B/A/Y/X): <span className="text-white">Num 1, 3, 7, 9</span></li>
+                                    <li>• Triggers (L1/R1): <span className="text-white">Num -, +</span></li>
+                                    <li>• Start / Select: <span className="text-white">Num *, /</span></li>
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Phone Scanner / QR Code (5 cols) */}
+                      <div className="lg:col-span-5 flex flex-col items-center justify-center bg-white/5 border border-white/5 p-6 rounded-3xl text-center">
+                        <h3 className="text-xs uppercase font-bold tracking-widest text-slate-500 mb-4">PHONE CONNECT</h3>
+                        
+                        <div className="bg-white p-4.5 rounded-2xl shadow-[0_0_30px_rgba(99,102,241,0.2)] mb-4">
+                          <QRCodeSVG 
+                            value={`${window.location.origin}/controller/${session.pairCode}`}
+                            size={164}
+                            bgColor="#ffffff"
+                            fgColor="#020617"
+                            level="H"
+                            includeMargin={false}
+                          />
+                        </div>
+
+                        <div className="space-y-2 max-w-sm mb-5">
+                          <span className="text-xs text-white/40 block">Scan to instantly connect mobile controllers</span>
+                          <span className="font-mono text-2xl font-black tracking-widest text-indigo-400 select-all block">{session.pairCode}</span>
+                        </div>
+
+                        <div className="w-full flex flex-col gap-2">
+                          <button
+                            onClick={() => {
+                              const shareUrl = `${window.location.origin}/controller/${session.pairCode}`;
+                              navigator.clipboard.writeText(shareUrl);
+                              setCopiedLink(true);
+                              setTimeout(() => setCopiedLink(false), 2000);
+                            }}
+                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] cursor-pointer"
+                          >
+                            {copiedLink ? (
+                              <>
+                                <Check className="w-4 h-4 text-emerald-400" />
+                                Link Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-4 h-4" />
+                                Copy Controller URL
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer instructions */}
+                    <div className="mt-8 pt-6 border-t border-white/5 text-center text-[11px] text-slate-500 leading-relaxed">
+                      All connected devices and simulated players instantly communicate through Firebase Realtime Database and the Emulator's native HTML5 Gamepad APIs. Maximize performance by keeping a stable internet connection.
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Premium Glassmorphic Escape Pause Menu Overlay */}
             <AnimatePresence>
