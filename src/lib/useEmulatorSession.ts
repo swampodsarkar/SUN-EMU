@@ -100,20 +100,33 @@ export function useEmulatorSession() {
       const data = snapshot.val();
       const currentInputs = data.inputs || {};
       const previousInputs = previousInputsRef.current[controllerId] || {};
+      const slot = data.slot || 1;
 
-      Object.keys(currentInputs).forEach((key) => {
-        if (currentInputs[key] && !previousInputs[key]) {
-          simulateKey(key, "keydown");
-        } else if (!currentInputs[key] && previousInputs[key]) {
-          simulateKey(key, "keyup");
-        }
-      });
+      // Send inputs to emulator iframe for Gamepad API simulation
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage({
+          type: 'CONTROLLER_INPUT',
+          playerSlot: slot,
+          inputs: currentInputs
+        }, '*');
+      }
 
-      Object.keys(previousInputs).forEach((key) => {
-        if (previousInputs[key] && currentInputs[key] === undefined) {
-          simulateKey(key, "keyup");
-        }
-      });
+      // Fallback: Keyboard events simulation is restricted ONLY to Player 1 (slot === 1)
+      if (slot === 1) {
+        Object.keys(currentInputs).forEach((key) => {
+          if (currentInputs[key] && !previousInputs[key]) {
+            simulateKey(key, "keydown");
+          } else if (!currentInputs[key] && previousInputs[key]) {
+            simulateKey(key, "keyup");
+          }
+        });
+
+        Object.keys(previousInputs).forEach((key) => {
+          if (previousInputs[key] && currentInputs[key] === undefined) {
+            simulateKey(key, "keyup");
+          }
+        });
+      }
 
       previousInputsRef.current[controllerId] = currentInputs;
     };

@@ -52,6 +52,89 @@
 <body>
     <div id="game"></div>
     <script>
+        // Setup mock gamepads for 4 players so multiplayer works seamlessly
+        const mockGamepads = [null, null, null, null];
+        for (let i = 0; i < 4; i++) {
+            mockGamepads[i] = {
+                id: "Virtual Gamepad (Player " + (i + 1) + ")",
+                index: i,
+                connected: true,
+                timestamp: Date.now(),
+                mapping: "standard",
+                axes: [0, 0, 0, 0],
+                buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }))
+            };
+        }
+
+        navigator.getGamepads = function() {
+            return mockGamepads;
+        };
+        if (navigator.webkitGetGamepads) {
+            navigator.webkitGetGamepads = function() {
+                return mockGamepads;
+            };
+        }
+
+        function updateGamepadInputs(slotIndex, inputs) {
+            if (slotIndex < 0 || slotIndex >= 4) return;
+            const gamepad = mockGamepads[slotIndex];
+            if (!gamepad) return;
+            
+            gamepad.timestamp = Date.now();
+            
+            const setButton = (index, pressed) => {
+                if (index >= 0 && index < gamepad.buttons.length) {
+                    gamepad.buttons[index] = {
+                        pressed: !!pressed,
+                        value: pressed ? 1.0 : 0.0
+                    };
+                }
+            };
+            
+            // Clear all buttons and axes
+            for (let i = 0; i < 17; i++) {
+                setButton(i, false);
+            }
+            gamepad.axes = [0, 0, 0, 0];
+            
+            if (!inputs) return;
+
+            // D-Pad buttons: Up (12), Down (13), Left (14), Right (15)
+            if (inputs["ArrowUp"]) setButton(12, true);
+            if (inputs["ArrowDown"]) setButton(13, true);
+            if (inputs["ArrowLeft"]) setButton(14, true);
+            if (inputs["ArrowRight"]) setButton(15, true);
+            
+            // Select (8), Start (9)
+            if (inputs["Shift"]) setButton(8, true);
+            if (inputs["Enter"]) setButton(9, true);
+            
+            // Face buttons (A/B/X/Y)
+            if (inputs["z"]) setButton(0, true); // B -> Face Bottom (A/Cross)
+            if (inputs["x"]) setButton(1, true); // A -> Face Right (B/Circle)
+            if (inputs["a"]) setButton(2, true); // Y -> Face Left (X/Square)
+            if (inputs["s"]) setButton(3, true); // X -> Face Top (Y/Triangle)
+            
+            // Shoulder triggers (L1/R1/L2/R2)
+            if (inputs["q"]) setButton(4, true); // L1
+            if (inputs["w"]) setButton(5, true); // R1
+            if (inputs["e"]) setButton(6, true); // L2
+            if (inputs["r"]) setButton(7, true); // R2
+            
+            // Stick clicks
+            if (inputs["t"]) setButton(10, true); // L3
+            if (inputs["y"]) setButton(11, true); // R3
+            
+            // Menu / Home button
+            if (inputs["Escape"]) setButton(16, true);
+            
+            // N64 C-buttons as Right Stick Axes fallback
+            if (inputs["j"]) gamepad.axes[2] = -1.0;
+            if (inputs["l"]) gamepad.axes[2] = 1.0;
+            if (inputs["i"]) gamepad.axes[3] = -1.0;
+            if (inputs["k"]) gamepad.axes[3] = 1.0;
+        }
+
         window.addEventListener('message', function(event) {
             const data = event.data;
             if (data && data.type === 'START_EMULATOR') {
@@ -88,6 +171,8 @@
                 if (canvas) {
                     canvas.dispatchEvent(ev);
                 }
+            } else if (data && data.type === 'CONTROLLER_INPUT') {
+                updateGamepadInputs(data.playerSlot - 1, data.inputs);
             }
         });
         

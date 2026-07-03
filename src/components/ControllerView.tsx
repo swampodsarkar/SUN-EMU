@@ -159,7 +159,15 @@ export default function ControllerView() {
           return;
         }
 
-        const newSlot = controllerCount + 1;
+        const existingSlots = Object.values(currentControllers).map((c: any) => c.slot);
+        let newSlot = 1;
+        for (let s = 1; s <= 4; s++) {
+          if (!existingSlots.includes(s)) {
+            newSlot = s;
+            break;
+          }
+        }
+
         const myControllerRef = ref(db, `sessions/${codeToJoin}/controllers/${myIdRef.current}`);
         
         onDisconnect(myControllerRef).remove();
